@@ -49,7 +49,15 @@
   .table tbody tr:nth-child(odd){background:#fafcff}
   .table .th--emph,.table td:last-child{font-weight:700;color:#1b3b8d}
 
-  canvas.chart{display:block;width:100%;height:300px;background:#fff;border:1px solid #e7edf7;border-radius:12px}
+  /* Charts */
+canvas.chart{display:block;width:100%;min-height:300px;background:#fff;border:1px solid #e7edf7;border-radius:12px}
+
+/* Keep pies perfectly round via a square box */
+#pieAssets, #pieLiabs{
+  aspect-ratio: 1 / 1;   /* square area in CSS */
+  min-height: 300px;     /* guarantees space when first shown */
+}
+
   .legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
   .legend .dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:middle}
 
@@ -327,78 +335,69 @@ function propRow(value=0){
 }
 
 /* =================== CHARTS =================== */
+  // Prepare a canvas with correct DPR scaling
+function prepCanvas(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const cw = Math.max(120, canvas.clientWidth  || 0);
+  const ch = Math.max(120, canvas.clientHeight || 0);
+  canvas.width  = Math.floor(cw * dpr);
+  canvas.height = Math.floor(ch * dpr);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, cw, ch };
+}
 // Line
 function drawLine(canvas, labels, series){
-  const ctx = canvas.getContext("2d");
-  const w = canvas.width = canvas.clientWidth, h = canvas.height = canvas.clientHeight;
-  ctx.clearRect(0,0,w,h); ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h);
-  if(!series || series.length<2){ ctx.fillStyle="#66789b"; ctx.font="12px system-ui"; ctx.fillText("Projection will appear here", 12, 20); return; }
+  const { ctx, cw:w, ch:h } = prepCanvas(canvas);
+  ctx.clearRect(0,0,w,h);
+  if(!series || series.length===0){ ctx.fillStyle="#66789b"; ctx.fillText("No data", 12, 20); return; }
+
   const padL=60,padR=10,padT=12,padB=28, iw=w-padL-padR, ih=h-padT-padB;
-  const min=Math.min(...series), max=Math.max(...series), lo=min*0.95, hi=max*1.05;
-  const sx=i=> padL + (i/(series.length-1))*iw, sy=v=> padT + ih - ((v-lo)/(hi-lo))*ih;
-  ctx.strokeStyle="#e6ecf7"; ctx.lineWidth=1; ctx.beginPath();
+  let lo = Math.min(...series), hi = Math.max(...series);
+  if (hi===lo) { hi = lo+1; }
+  const sx=i=> padL + (i/(series.length-1))*iw;
+  const sy=v=> padT + ih - ((v-lo)/(hi-lo))*ih;
+
+  ctx.strokeStyle="#e6ecf7"; ctx.beginPath();
   for(let i=0;i<=4;i++){ const y=padT+(i/4)*ih; ctx.moveTo(padL,y); ctx.lineTo(w-padR,y);} ctx.stroke();
-  ctx.fillStyle="#66789b"; ctx.font="11px system-ui";
-  const step=Math.max(1,Math.floor(labels.length/6));
-  labels.forEach((lab,i)=>{ if(i%step===0||i===labels.length-1){ ctx.fillText(lab, sx(i)-10, h-6);} });
+
   ctx.strokeStyle="#2b6cff"; ctx.lineWidth=2; ctx.beginPath();
-  series.forEach((v,i)=>{ const x=sx(i), y=sy(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.stroke();
-  ctx.fillStyle="#2b6cff"; series.forEach((v,i)=>{ const x=sx(i), y=sy(v); ctx.beginPath(); ctx.arc(x,y,2.8,0,Math.PI*2); ctx.fill(); });
+  series.forEach((v,i)=>{ const x=sx(i), y=sy(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.stroke();
+
+  ctx.fillStyle="#2b6cff";
+  series.forEach((v,i)=>{ const x=sx(i), y=sy(v); ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); });
 }
 // Pie
+// ------- Pie chart (perfect circle, safe radius) -------
 function drawPie(canvas, slices, colors, labels, legendEl){
-  const ctx = canvas.getContext("2d");
-
-  // Make sure we have a sensible drawing area even if the element is narrow/hidden
-  const w = Math.max(120, canvas.clientWidth || canvas.width || 300);
-  const h = Math.max(120, canvas.clientHeight || canvas.height || 300);
-  canvas.width = w; 
-  canvas.height = h;
-
-  // Clean values (no negatives/NaN)
-  const vals = (slices || []).map(v => Math.max(0, Number(v) || 0));
-  const total = vals.reduce((a,b)=>a+b, 0);
-
-  // Clear background
+  const { ctx, cw:w, ch:h } = prepCanvas(canvas);
   ctx.clearRect(0,0,w,h);
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0,0,w,h);
 
-  if (total <= 0) {
-    ctx.fillStyle = "#66789b";
-    ctx.font = "12px system-ui";
-    ctx.fillText("No data", 12, 20);
-    if (legendEl) legendEl.innerHTML = "";
+  // sanitize values
+  const vals = (slices||[]).map(v => Math.max(0, Number(v)||0));
+  const total = vals.reduce((a,b)=>a+b,0);
+  if(total <= 0){
+    ctx.fillStyle="#66789b"; ctx.font="12px system-ui"; ctx.fillText("No data", 12, 20);
+    if(legendEl) legendEl.innerHTML = "";
     return;
   }
 
-  // Safe radius (never negative)
-  const pad = 20;
-  const r = Math.max(12, Math.min(w, h) / 2 - pad);
-  if (!isFinite(r) || r <= 12) {
-    ctx.fillStyle = "#66789b";
-    ctx.font = "12px system-ui";
-    ctx.fillText("Not enough space", 12, 20);
-    if (legendEl) legendEl.innerHTML = "";
-    return;
-  }
+  // draw using a TRUE circle (square fit)
+  const size = Math.min(w, h);
+  const pad  = 20;
+  const r    = Math.max(12, size/2 - pad);
+  const cx   = w/2, cy = h/2;
 
-  // Draw
-  let start = -Math.PI / 2;
-  const cx = w / 2, cy = h / 2;
-  vals.forEach((val, i) => {
-    const ang = (val / total) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, r, start, start + ang);
-    ctx.closePath();
-    ctx.fillStyle = colors[i % colors.length];
-    ctx.fill();
+  let start = -Math.PI/2;
+  vals.forEach((val,i)=>{
+    const ang = (val/total) * Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+ang); ctx.closePath();
+    ctx.fillStyle = colors[i % colors.length]; ctx.fill();
     start += ang;
   });
 
-  // Legend
-  if (legendEl) {
+  if(legendEl){
     legendEl.innerHTML = labels.map((l,i)=>
       `<span><span class="dot" style="background:${colors[i%colors.length]}"></span>${l}: <strong>${vals[i].toLocaleString()}</strong> AED</span>`
     ).join(" ");
