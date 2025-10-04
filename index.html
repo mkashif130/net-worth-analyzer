@@ -363,8 +363,8 @@ document.addEventListener("DOMContentLoaded", ()=>{
   $("#calc").addEventListener("click", ()=>{ collectStep4(); calculateFromSTATE(); });
 
   // Edit & Reset
-  $("#editAgain").addEventListener("click", ()=>   hideResults();
- showStep(1));
+  $("#editAgain").addEventListener("click", ()=>   {hideResults();
+ showStep(1);});
   $("#reset").addEventListener("click", ()=>{ Object.assign(STATE, {
       stocks:124780, cash:10000, ef:300000, props:[666667,400000,173333,40000],
       liab:172000, liabYears:4, monthly:5000, semi:95420, semiUntil:2028,
