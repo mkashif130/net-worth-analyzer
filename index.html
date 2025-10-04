@@ -3,14 +3,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AED Net Worth Planner — Wizard (Light, Fixed)</title>
+<title>AED Net Worth Planner — Light (Fixed Horizon)</title>
 <style>
-  :root{
-    --bg:#f7f9fc; --card:#ffffff; --ink:#0f172a; --muted:#5b6b88; --line:#e5e9f2; --accent:#2b6cff;
-    --ok:#27a36a; --warn:#d4a018; --bad:#e05252;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  :root{--bg:#f7f9fc;--card:#ffffff;--ink:#0f172a;--muted:#5b6b88;--line:#e5e9f2;--accent:#2b6cff;--ok:#27a36a;--warn:#d4a018;--bad:#e05252}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial}
   h1,h2,h3{margin:0 0 .5rem} h1{font-size:1.28rem} h2{font-size:1.05rem} h3{font-size:.95rem;color:var(--muted)}
   .wrap{max-width:860px;margin:28px auto;padding:0 16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 6px 24px #0b1a3320}
@@ -31,10 +27,9 @@
   .table th:first-child,.table td:first-child{text-align:left}
   canvas{background:#fff;border:1px solid #e7edf7;border-radius:12px}
   .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
-  .tip{background:#f6fbff;border:1px solid #e2f1ff;border-radius:10px;padding:8px;color:#31507f}
-  /* tiny toast */
   #toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:8px 12px;border-radius:10px;box-shadow:0 8px 20px #0002;opacity:0;pointer-events:none;transition:.25s}
   #toast.show{opacity:1}
+  .tip{background:#f6fbff;border:1px solid #e2f1ff;border-radius:10px;padding:8px;color:#31507f}
 </style>
 </head>
 <body>
@@ -120,7 +115,6 @@
     </div>
     <div style="display:flex;justify-content:space-between;margin-top:12px">
       <button class="ghost" type="button" data-back>Back</button>
-      <!-- Redundant onclick + JS listener -->
       <button id="calc" type="button" onclick="calculate()">Calculate</button>
     </div>
   </section>
@@ -156,66 +150,46 @@
 </div>
 
 <script>
-/* ===== Minimal helpers (global on purpose for onclick fallback) ===== */
+/* ===== Helpers ===== */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const fmt = n => (n===null||isNaN(n)) ? "–" : n.toLocaleString(undefined,{maximumFractionDigits:0});
 const YEAR0 = (new Date()).getFullYear();
 
-/* Progress & steps */
-const steps = []; // filled on DOMContentLoaded
+/* Steps / progress */
+const steps = [];
 let cur = 1;
 function setProgress(){ $("#bar").style.width = ((cur-1)/(steps.length))*100 + "%"; }
-function showStep(n){
-  cur = n;
-  steps.forEach(s => s.classList.toggle("hide", parseInt(s.dataset.step,10)!==n));
-  $("#results")?.classList.add("hide");
-  setProgress();
-}
+function showStep(n){ cur=n; steps.forEach(s=>s.classList.toggle("hide", +s.dataset.step!==n)); $("#results")?.classList.add("hide"); setProgress(); }
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 900); }
 
-/* Toast */
-function toast(msg){
-  const t=$("#toast"); t.textContent=msg; t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"), 900);
-}
-
-/* Chart */
+/* Chart (robust for empty/short series) */
 function drawChart(canvas, labels, series){
+  if(!Array.isArray(series) || series.length < 2){ // nothing to draw yet
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width = canvas.clientWidth, h = canvas.height = canvas.clientHeight;
+    ctx.clearRect(0,0,w,h); ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle="#66789b"; ctx.font="12px system-ui"; ctx.fillText("Projection will appear here", 12, 20);
+    return;
+  }
   const ctx = canvas.getContext("2d");
-  const w = canvas.width = canvas.clientWidth;
-  const h = canvas.height = canvas.clientHeight;
-  ctx.clearRect(0,0,w,h);
-  ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h);
-  const padL=44,padR=10,padT=10,padB=22;
-  const iw=w-padL-padR, ih=h-padT-padB;
-
-  const min=Math.min(...series), max=Math.max(...series);
-  const lo=min*0.95, hi=max*1.05;
-  const sx=i=> padL + (i/(series.length-1))*iw;
-  const sy=v=> padT + ih - ((v-lo)/(hi-lo))*ih;
-
-  // grid
+  const w = canvas.width = canvas.clientWidth, h = canvas.height = canvas.clientHeight;
+  ctx.clearRect(0,0,w,h); ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h);
+  const padL=44,padR=10,padT=10,padB=22, iw=w-padL-padR, ih=h-padT-padB;
+  const min=Math.min(...series), max=Math.max(...series), lo=min*0.95, hi=max*1.05;
+  const sx=i=> padL + (i/(series.length-1))*iw, sy=v=> padT + ih - ((v-lo)/(hi-lo))*ih;
   ctx.strokeStyle="#e6ecf7"; ctx.lineWidth=1; ctx.beginPath();
-  for(let i=0;i<=4;i++){ const y=padT+(i/4)*ih; ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); }
-  ctx.stroke();
-
-  // y labels
+  for(let i=0;i<=4;i++){ const y=padT+(i/4)*ih; ctx.moveTo(padL,y); ctx.lineTo(w-padR,y);} ctx.stroke();
   ctx.fillStyle="#66789b"; ctx.font="11px system-ui";
   for(let i=0;i<=4;i++){ const val=lo+(i/4)*(hi-lo); ctx.fillText(fmt(Math.round(val)), 6, padT+(1-i/4)*ih+4); }
-
-  // x labels
-  const step = Math.max(1, Math.floor(labels.length/6));
-  labels.forEach((lab,i)=>{ if(i%step===0 || i===labels.length-1){ ctx.fillText(lab, sx(i)-8, h-6); } });
-
-  // line
+  const step=Math.max(1,Math.floor(labels.length/6));
+  labels.forEach((lab,i)=>{ if(i%step===0||i===labels.length-1){ ctx.fillText(lab, sx(i)-8, h-6);} });
   ctx.strokeStyle="#2b6cff"; ctx.lineWidth=2; ctx.beginPath();
-  series.forEach((v,i)=>{ const x=sx(i), y=sy(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
-  ctx.stroke();
-  ctx.fillStyle="#2b6cff";
-  series.forEach((v,i)=>{ const x=sx(i), y=sy(v); ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill(); });
+  series.forEach((v,i)=>{ const x=sx(i), y=sy(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.stroke();
+  ctx.fillStyle="#2b6cff"; series.forEach((v,i)=>{ const x=sx(i), y=sy(v); ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill(); });
 }
 
-/* === Calculation (global so onclick works even if listeners fail) === */
+/* === Calculate (safe defaults) === */
 function calculate(){
   toast("Calculating…");
 
@@ -223,24 +197,24 @@ function calculate(){
   const cash   = +($("#cash").value||0);
   const ef     = +($("#ef").value||0);
   const props  = $$("#propList input").reduce((s,i)=> s + (+i.value||0), 0);
-
-  const liab0     = +($("#liab").value||0);
-  const liabYears = Math.max(0, +($("#liabYears").value||0));
-
-  const monthly   = +($("#monthly").value||0);
-  const semi      = +($("#semi").value||0);
+  const liab0  = +($("#liab").value||0);
+  const liYears= Math.max(0, +($("#liabYears").value||0));
+  const monthly= +($("#monthly").value||0);
+  const semi   = +($("#semi").value||0);
   const semiUntil = +($("#semiUntil").value||YEAR0+3);
+  const ret    = (+($("#retPct").value||0))/100;
+  const div    = (+($("#divPct").value||0))/100;
 
-  const ret = (+($("#retPct").value||0))/100;
-  const div = (+($("#divPct").value||0))/100;
-  const horizon = parseInt($("#horizon").value,10);
+  // **Robust horizon default**
+  let horizon = parseInt($("#horizon").value,10);
+  if(!Number.isFinite(horizon) || horizon<=0){ horizon = 5; $("#horizon").value = "5"; }
 
   const assetsNow = stocks + cash + ef + props;
   const netNow = assetsNow - liab0;
 
-  // projection
+  // Projection
   let st=stocks, pr=props, cs=cash+ef, li=liab0;
-  const liSteps = liabYears ? Math.min(liabYears, horizon) : 0;
+  const liSteps = liYears ? Math.min(liYears, horizon) : 0;
   const liDrop = liSteps ? (li/liSteps) : 0;
 
   const rows=[], labels=[], netSeries=[];
@@ -248,15 +222,11 @@ function calculate(){
     const y = YEAR0 + i - 1;
     const add = (y<=semiUntil ? 2*semi : 0) + monthly*12;
     st += add;
-
     const dividends = st * div;   // before growth
     st *= (1 + ret);              // growth
-
     if(i<=liSteps){ li = Math.max(0, li - liDrop); } else { li = 0; }
-
     const totalAssets = st + pr + cs;
     const nw = totalAssets - li;
-
     rows.push({y, st:Math.round(st), divs:Math.round(dividends), pr:Math.round(pr), cs:Math.round(cs), li:Math.round(li), nw:Math.round(nw)});
     labels.push(String(y)); netSeries.push(nw);
   }
@@ -267,7 +237,7 @@ function calculate(){
   $("#nwAED").textContent     = fmt(netNow) + " AED";
   $("#hzOut").textContent     = horizon + "y";
 
-  // Table (reverse for quick takeaway)
+  // Table
   const tb=$("#projTable tbody"); tb.innerHTML="";
   rows.slice().reverse().forEach(r=>{
     const tr=document.createElement("tr");
@@ -279,16 +249,14 @@ function calculate(){
 
   // Retirement
   const spend=+($("#retSpend").value||0), swr=(+($("#swr").value||4))/100;
-  const mode=$("#includeProp").value;
-  let propFactor=0; if(mode==="half") propFactor=.5; if(mode==="yes") propFactor=1;
-  const projectedNet = rows.at(-1)?.nw ?? netNow;
+  const mode=$("#includeProp").value; let propFactor=0; if(mode==="half") propFactor=.5; if(mode==="yes") propFactor=1;
+  const projectedNet = rows.length ? rows[rows.length-1].nw : netNow;
   const withdrawalBase = projectedNet - pr + pr*propFactor;
   const swrIncome = withdrawalBase * swr;
   const divIncome = withdrawalBase * 0.35 * ((+($("#divPct").value||3))/100);
   const ok = (swrIncome + divIncome) >= spend;
   const cls = ok ? "ok" : ((swrIncome+divIncome)>0.8*spend ? "warn" : "bad");
   const txt = ok ? "On track ✅" : ((swrIncome+divIncome)>0.8*spend ? "Close — needs tweaks ⚠️" : "Shortfall ⛔");
-
   $("#retirement").innerHTML = `
     <div class="kpis" style="margin-top:8px">
       <div class="stat"><span class="muted">Projected Net @ Horizon</span><strong>${fmt(projectedNet)} AED</strong></div>
@@ -296,59 +264,57 @@ function calculate(){
       <div class="stat"><span class="muted">SWR Income</span><strong>${fmt(Math.round(swrIncome))} AED/yr</strong></div>
       <div class="stat"><span class="muted">Est. Dividends</span><strong>${fmt(Math.round(divIncome))} AED/yr</strong></div>
     </div>
-    <p class="small muted" style="margin-top:8px">Target spend: <strong>${fmt(spend)} AED/yr</strong> — <span class="${cls}"><strong>${txt}</strong></span></p>
+    <p class="tip" style="margin-top:8px">Target spend: <strong>${fmt(spend)} AED/yr</strong> — <span class="${cls}"><strong>${txt}</strong></span></p>
   `;
 
-  // Reveal results & progress bar
+  // Reveal results
   $("#results").classList.remove("hide");
-  showStep(steps.length); // move progress to end
+  showStep(steps.length);
   $("#results").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
 /* Boot */
-document.addEventListener("DOMContentLoaded", () => {
-  // cache steps
+document.addEventListener("DOMContentLoaded", ()=>{
+  // collect steps
   Array.from(document.querySelectorAll(".step")).forEach(s=>steps.push(s));
-
-  // horizon options
-  const sel=$("#horizon"); for(let y=5;y<=80;y+=5){ const o=document.createElement("option"); o.value=String(y); o.textContent=`${y} years`; sel.appendChild(o); }
+  // horizon options (ensure there’s a value)
+  const sel=$("#horizon"); sel.innerHTML="";
+  for(let y=5;y<=80;y+=5){ const o=document.createElement("option"); o.value=String(y); o.textContent=`${y} years`; sel.appendChild(o); }
+  sel.value = sel.value || "5"; // default
 
   // defaults
   $("#stocks").value=124780; $("#cash").value=10000; $("#ef").value=300000;
   $("#liab").value=172000; $("#liabYears").value=4;
   $("#monthly").value=5000; $("#semi").value=95420; $("#semiUntil").value=2028;
-  $("#retPct").value=8; $("#divPct").value=3; $("#horizon").value=5;
+  $("#retPct").value=8; $("#divPct").value=3; $("#horizon").value= sel.value;
   $("#retSpend").value=240000; $("#swr").value=4; $("#includeProp").value="no";
 
   // properties
   const propList=$("#propList");
   function propRow(v=0){
-    const wrap = document.createElement("div");
-    wrap.className="row"; wrap.style.marginTop="6px";
-    wrap.innerHTML = `<div><input type="number" step="1" placeholder="e.g., 666667" value="${v||""}"></div>
-                      <div style="flex:0 0 auto"><button type="button" class="ghost del">✕</button></div>`;
+    const wrap=document.createElement("div"); wrap.className="row"; wrap.style.marginTop="6px";
+    wrap.innerHTML=`<div><input type="number" step="1" placeholder="e.g., 666667" value="${v||""}"></div>
+                    <div style="flex:0 0 auto"><button type="button" class="ghost del">✕</button></div>`;
     wrap.querySelector(".del").addEventListener("click", ()=> wrap.remove());
     return wrap;
   }
   [666667,400000,173333,40000].forEach(v=> propList.appendChild(propRow(v)));
   $("#addProp").addEventListener("click", ()=> propList.appendChild(propRow(0)));
 
-  // navigation
+  // nav
   const backBtns = document.querySelectorAll("[data-back]");
   backBtns.forEach(b=> b.addEventListener("click", ()=> showStep(cur-1)));
   $("#next1").addEventListener("click", ()=> showStep(2));
   $("#next2").addEventListener("click", ()=> showStep(3));
   $("#next3").addEventListener("click", ()=> showStep(4));
 
-  // calculate (redundant binding in addition to onclick)
-  const calcBtn = $("#calc");
-  if(calcBtn){ calcBtn.addEventListener("click", calculate); }
+  // calculate (redundant binding + inline onclick)
+  const calcBtn = $("#calc"); if(calcBtn){ calcBtn.addEventListener("click", calculate); }
 
   // edit & reset
   $("#editAgain").addEventListener("click", ()=> showStep(1));
   $("#reset").addEventListener("click", ()=> location.reload());
 
-  // start
   showStep(1); setProgress();
 });
 </script>
