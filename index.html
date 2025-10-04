@@ -3,10 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AED Net Worth Planner — Wizard (State-driven)</title>
+<title>AED Net Worth Planner — V1 (State-driven)</title>
 <style>
-  :root{--bg:#f7f9fc;--card:#ffffff;--ink:#0f172a;--muted:#5b6b88;--line:#e5e9f2;--accent:#2b6cff;--ok:#27a36a;--warn:#d4a018;--bad:#e05252}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  :root{
+    --bg:#f7f9fc; --card:#ffffff; --ink:#0f172a; --muted:#5b6b88; --line:#e5e9f2; --accent:#2b6cff;
+    --ok:#27a36a; --warn:#d4a018; --bad:#e05252; --chip:#eef3ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial}
   h1,h2,h3{margin:0 0 .5rem} h1{font-size:1.28rem} h2{font-size:1.05rem} h3{font-size:.95rem;color:var(--muted)}
   .wrap{max-width:860px;margin:28px auto;padding:0 16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 6px 24px #0b1a3320}
@@ -19,54 +23,35 @@
   .progress{height:8px;background:#edf2ff;border-radius:999px;overflow:hidden;margin:10px 0 16px;border:1px solid #dfe7fb}
   .bar{height:100%;background:#2b6cff;width:0%;transition:width .25s ease}
   .hide{display:none}
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-  .stat{display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid #e6ebf5;border-radius:12px;background:#fbfdff}
-  .stat strong{font-size:1.08rem}
-  .table{width:100%;border-collapse:collapse;margin-top:8px;font-variant-numeric:tabular-nums}
-  .table th,.table td{border-bottom:1px dashed #e1e7f3;padding:8px;text-align:right}
+
+  /* Results layout polish */
+  .results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .hz-picker{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
+  .hz-picker select{min-width:120px}
+  .section-title{margin:14px 0 8px;font-weight:600;color:#2b3a59}
+  .kpis{display:grid;gap:12px}
+  .kpis--results{grid-template-columns:repeat(4,1fr)}
+  .kpis--ret{grid-template-columns:repeat(4,1fr)}
+  .stat{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid #e6ebf5;border-radius:12px;background:#fbfdff}
+  .stat__label{font-size:.83rem;color:#6a7b98}
+  .stat__value{display:flex;align-items:baseline;gap:6px}
+  .stat__value strong{font-size:1.22rem;letter-spacing:.2px;font-variant-numeric:tabular-nums}
+  .unit{font-size:.82rem;color:#8a99b6}
+  .stat--emph{background:#f6fbff;border-color:#e2f1ff}
+  .table{width:100%;border-collapse:collapse;margin-top:10px;font-variant-numeric:tabular-nums}
+  .table th,.table td{padding:8px 10px;border-bottom:1px dashed #e1e7f3;text-align:right}
   .table th:first-child,.table td:first-child{text-align:left}
+  .table thead th{font-weight:600;color:#415274}
+  .table tbody tr:nth-child(odd){background:#fafcff}
+  .table .th--emph, .table td:last-child{font-weight:700;color:#1b3b8d}
   canvas{background:#fff;border:1px solid #e7edf7;border-radius:12px}
   .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
   .tip{background:#f6fbff;border:1px solid #e2f1ff;border-radius:10px;padding:8px;color:#31507f}
+  .callout{margin:10px 0 0;padding:10px 12px;border:1px solid #e6efff;background:#f6faff;border-radius:10px;color:#314e84}
+  .results-actions{display:flex;justify-content:space-between;gap:10px;margin-top:16px}
   #toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:8px 12px;border-radius:10px;box-shadow:0 8px 20px #0002;opacity:0;pointer-events:none;transition:.25s}
   #toast.show{opacity:1}
-
-  /* Results header */
-.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.hz-picker{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
-.hz-picker select{min-width:120px}
-
-/* Section titles */
-.section-title{margin:14px 0 8px;font-weight:600;color:#2b3a59}
-
-/* KPI grid polish */
-.kpis--results{grid-template-columns:repeat(4,1fr);gap:12px}
-.kpis--ret{grid-template-columns:repeat(4,1fr);gap:12px}
-.stat{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid #e6ebf5;border-radius:12px;background:#fbfdff}
-.stat__label{font-size:.83rem;color:#6a7b98}
-.stat__value{display:flex;align-items:baseline;gap:6px}
-.stat__value strong{font-size:1.22rem;letter-spacing:.2px;font-variant-numeric:tabular-nums}
-.stat .unit{font-size:.82rem;color:#8a99b6}
-.stat--emph{background:#f6fbff;border-color:#e2f1ff}
-
-/* Table */
-.table--tight th,.table--tight td{padding:8px 10px}
-.table thead th{font-weight:600;color:#415274}
-.table tbody tr:nth-child(odd){background:#fafcff}
-.table td strong{font-weight:700}
-.table .th--emph, .table td:last-child{font-weight:700;color:#1b3b8d}
-
-/* Callout under retirement snapshot */
-.callout{margin:10px 0 0;padding:10px 12px;border:1px solid #e6efff;background:#f6faff;border-radius:10px;color:#314e84}
-
-/* Footer buttons */
-.results-actions{display:flex;justify-content:space-between;gap:10px;margin-top:16px}
-
-/* Responsive */
-@media (max-width:720px){
-  .kpis--results, .kpis--ret{grid-template-columns:1fr 1fr}
-}
-
+  @media (max-width:720px){ .kpis--results,.kpis--ret{grid-template-columns:1fr 1fr} }
 </style>
 </head>
 <body>
@@ -78,7 +63,7 @@
   </div>
   <div class="progress"><div class="bar" id="bar"></div></div>
 
-  <!-- STEP 1 -->
+  <!-- STEP 1 — ASSETS -->
   <section class="card step" data-step="1">
     <h2>Step 1 — Assets (AED)</h2>
     <p class="tip">Enter what you own. You can refine later.</p>
@@ -89,15 +74,11 @@
     </div>
     <h3 style="margin-top:8px">Properties (AED)</h3>
     <div id="propList"></div>
-    <div class="row" style="margin-top:6px">
-      <div style="flex:0 0 auto"><button id="addProp" type="button" class="ghost">+ Add Property</button></div>
-    </div>
-    <div style="display:flex;justify-content:flex-end;margin-top:12px">
-      <button id="next1" type="button">Next</button>
-    </div>
+    <div class="row" style="margin-top:6px"><div style="flex:0 0 auto"><button id="addProp" type="button" class="ghost">+ Add Property</button></div></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button id="next1" type="button">Next</button></div>
   </section>
 
-  <!-- STEP 2 -->
+  <!-- STEP 2 — LIABILITIES -->
   <section class="card step hide" data-step="2">
     <h2>Step 2 — Liabilities (AED)</h2>
     <p class="tip">We’ll model a straight-line payoff.</p>
@@ -111,7 +92,7 @@
     </div>
   </section>
 
-  <!-- STEP 3 -->
+  <!-- STEP 3 — PROJECTION -->
   <section class="card step hide" data-step="3">
     <h2>Step 3 — Projection</h2>
     <p class="tip">How you’ll invest going forward.</p>
@@ -123,10 +104,7 @@
     <div class="row">
       <div><label>Expected Annual Return (%)</label><input id="retPct" type="number" step="0.1" value="8"></div>
       <div><label>Dividend Yield (%)</label><input id="divPct" type="number" step="0.1" value="3"></div>
-      <div>
-        <label>Projection Horizon</label>
-        <select id="horizon"></select>
-      </div>
+      <div><label>Projection Horizon</label><select id="horizon"></select></div>
     </div>
     <div style="display:flex;justify-content:space-between;margin-top:12px">
       <button class="ghost" type="button" data-back>Back</button>
@@ -134,7 +112,7 @@
     </div>
   </section>
 
-  <!-- STEP 4 -->
+  <!-- STEP 4 — RETIREMENT -->
   <section class="card step hide" data-step="4">
     <h2>Step 4 — Retirement</h2>
     <p class="tip">See if you’re on track vs. your yearly target.</p>
@@ -157,48 +135,47 @@
   </section>
 
   <!-- RESULTS -->
-<section class="card" id="results" style="display:none">
-  <div class="results-header">
-    <h2>Results</h2>
-    <label class="hz-picker">
-      <span>Horizon</span>
-      <select id="hzRes"></select>
-    </label>
-  </div>
+  <section class="card" id="results" style="display:none">
+    <div class="results-header">
+      <h2>Results</h2>
+      <label class="hz-picker">
+        <span>Horizon</span>
+        <select id="hzRes"></select>
+      </label>
+    </div>
 
-  <div class="kpis kpis--results">
-    <div class="stat"><div class="stat__label">Total Assets</div><div class="stat__value"><strong id="assetsAED">–</strong><span class="unit">AED</span></div></div>
-    <div class="stat"><div class="stat__label">Liabilities</div>  <div class="stat__value"><strong id="liabOut">–</strong><span class="unit">AED</span></div></div>
-    <div class="stat stat--emph"><div class="stat__label">Net Worth</div><div class="stat__value"><strong id="nwAED">–</strong><span class="unit">AED</span></div></div>
-    <div class="stat"><div class="stat__label">Horizon</div>     <div class="stat__value"><strong id="hzOut">–</strong></div></div>
-  </div>
+    <div class="kpis kpis--results">
+      <div class="stat"><div class="stat__label">Total Assets</div><div class="stat__value"><strong id="assetsAED">–</strong><span class="unit">AED</span></div></div>
+      <div class="stat"><div class="stat__label">Liabilities</div>  <div class="stat__value"><strong id="liabOut">–</strong><span class="unit">AED</span></div></div>
+      <div class="stat stat--emph"><div class="stat__label">Net Worth</div><div class="stat__value"><strong id="nwAED">–</strong><span class="unit">AED</span></div></div>
+      <div class="stat"><div class="stat__label">Horizon</div>     <div class="stat__value"><strong id="hzOut">–</strong></div></div>
+    </div>
 
-  <div class="section-title">Projection <span class="muted">(last year first)</span></div>
-  <canvas id="chart" height="180"></canvas>
+    <div class="section-title">Projection <span class="muted">(last year first)</span></div>
+    <canvas id="chart" height="180"></canvas>
 
-  <table class="table table--tight" id="projTable" style="margin-top:10px">
-    <thead><tr>
-      <th>Year</th><th>Stocks</th><th>Dividends</th><th>Properties</th><th>Cash+EF</th><th>Liabilities</th><th class="th--emph">Net Worth</th>
-    </tr></thead>
-    <tbody></tbody>
-  </table>
+    <table class="table" id="projTable">
+      <thead><tr>
+        <th>Year</th><th>Stocks</th><th>Dividends</th><th>Properties</th><th>Cash+EF</th><th>Liabilities</th><th class="th--emph">Net Worth</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
 
-  <div class="section-title">Retirement Snapshot</div>
-  <div class="kpis kpis--ret">
-    <div class="stat"><div class="stat__label">Projected Net @ Horizon</div><div class="stat__value"><strong id="retProj">–</strong><span class="unit">AED</span></div></div>
-    <div class="stat"><div class="stat__label">Withdrawal Base</div>        <div class="stat__value"><strong id="retBase">–</strong><span class="unit">AED</span></div></div>
-    <div class="stat"><div class="stat__label">SWR Income</div>             <div class="stat__value"><strong id="retSWR">–</strong><span class="unit">AED/yr</span></div></div>
-    <div class="stat"><div class="stat__label">Est. Dividends</div>         <div class="stat__value"><strong id="retDivs">–</strong><span class="unit">AED/yr</span></div></div>
-  </div>
+    <div class="section-title">Retirement Snapshot</div>
+    <div class="kpis kpis--ret">
+      <div class="stat"><div class="stat__label">Projected Net @ Horizon</div><div class="stat__value"><strong id="retProj">–</strong><span class="unit">AED</span></div></div>
+      <div class="stat"><div class="stat__label">Withdrawal Base</div>        <div class="stat__value"><strong id="retBase">–</strong><span class="unit">AED</span></div></div>
+      <div class="stat"><div class="stat__label">SWR Income</div>             <div class="stat__value"><strong id="retSWR">–</strong><span class="unit">AED/yr</span></div></div>
+      <div class="stat"><div class="stat__label">Est. Dividends</div>         <div class="stat__value"><strong id="retDivs">–</strong><span class="unit">AED/yr</span></div></div>
+    </div>
 
-  <p class="callout" id="retMsg"></p>
+    <p class="callout" id="retMsg"></p>
 
-  <div class="results-actions">
-    <button class="ghost" type="button" id="editAgain">← Edit inputs</button>
-    <button class="ghost" type="button" id="reset">Reset</button>
-  </div>
-</section>
-
+    <div class="results-actions">
+      <button class="ghost" type="button" id="editAgain">← Edit inputs</button>
+      <button class="ghost" type="button" id="reset">Reset</button>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -225,47 +202,45 @@ function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("sh
 const steps = [];
 let cur = 1;
 function setProgress(){ $("#bar").style.width = ((cur-1)/(steps.length))*100 + "%"; }
-function showStep(n){
-  cur = n;
-  steps.forEach(s => s.classList.toggle("hide", +s.dataset.step !== n));
-  setProgress();           // ❌ don't touch #results here anymore
-}
-const hideResults = () => { const r = document.getElementById("results"); if (r) r.classList.add("hide"); };
+function showStep(n){ cur=n; steps.forEach(s=>s.classList.toggle("hide", +s.dataset.step!==n)); setProgress(); }
+const hideResults = () => { const r=$("#results"); if(r) r.style.display="none"; };
 
+/* Horizon options filler */
+function fillHorizonOptions(selectEl, value) {
+  if (!selectEl) return;
+  selectEl.innerHTML = "";
+  for (let y = 5; y <= 80; y += 5) {
+    const opt = document.createElement("option");
+    opt.value = String(y);
+    opt.textContent = `${y} years`;
+    selectEl.appendChild(opt);
+  }
+  selectEl.value = String(value || 5);
+}
 
 /* =================== UI BINDING =================== */
-// Populate inputs from STATE
+// Hydrate steps from STATE
 function hydrateStep1(){
   $("#stocks").value=STATE.stocks; $("#cash").value=STATE.cash; $("#ef").value=STATE.ef;
   const list=$("#propList"); list.innerHTML="";
-  STATE.props.forEach((v,i)=> list.appendChild(propRow(v,i)));
+  STATE.props.forEach(v=> list.appendChild(propRow(v)));
 }
-function hydrateStep2(){
-  $("#liab").value=STATE.liab; $("#liabYears").value=STATE.liabYears;
-}
+function hydrateStep2(){ $("#liab").value=STATE.liab; $("#liabYears").value=STATE.liabYears; }
 function hydrateStep3(){
-  // horizon options
-  const sel=$("#horizon"); sel.innerHTML="";
-  for(let y=5;y<=80;y+=5){ const o=document.createElement("option"); o.value=String(y); o.textContent=`${y} years`; sel.appendChild(o); }
-  sel.value = String(STATE.horizon||5);
+  fillHorizonOptions($("#horizon"), STATE.horizon);
   $("#monthly").value=STATE.monthly; $("#semi").value=STATE.semi; $("#semiUntil").value=STATE.semiUntil;
   $("#retPct").value=STATE.retPct; $("#divPct").value=STATE.divPct;
 }
-function hydrateStep4(){
-  $("#retSpend").value=STATE.retSpend; $("#swr").value=STATE.swr; $("#includeProp").value=STATE.includeProp;
-}
+function hydrateStep4(){ $("#retSpend").value=STATE.retSpend; $("#swr").value=STATE.swr; $("#includeProp").value=STATE.includeProp; }
 
-// Collect inputs into STATE (called on Next)
+// Collect inputs into STATE (on Next)
 function collectStep1(){
   STATE.stocks=+($("#stocks").value||0);
   STATE.cash=+($("#cash").value||0);
   STATE.ef=+($("#ef").value||0);
   STATE.props = $$("#propList input").map(i=>+(i.value||0));
 }
-function collectStep2(){
-  STATE.liab=+($("#liab").value||0);
-  STATE.liabYears=+($("#liabYears").value||0);
-}
+function collectStep2(){ STATE.liab=+($("#liab").value||0); STATE.liabYears=+($("#liabYears").value||0); }
 function collectStep3(){
   STATE.monthly=+($("#monthly").value||0);
   STATE.semi=+($("#semi").value||0);
@@ -281,24 +256,22 @@ function collectStep4(){
 }
 
 // Property row
-function propRow(value=0, idx=null){
+function propRow(value=0){
   const wrap=document.createElement("div"); wrap.className="row"; wrap.style.marginTop="6px";
   wrap.innerHTML = `
     <div><input type="number" step="1" value="${value||""}" placeholder="e.g., 666667"></div>
     <div style="flex:0 0 auto"><button type="button" class="ghost del">✕</button></div>`;
-  // delete syncs STATE
   wrap.querySelector(".del").addEventListener("click", ()=>{
     wrap.remove();
     STATE.props = $$("#propList input").map(i=>+(i.value||0));
   });
-  // input change syncs STATE
   wrap.querySelector("input").addEventListener("change", ()=>{
     STATE.props = $$("#propList input").map(i=>+(i.value||0));
   });
   return wrap;
 }
 
-/* =================== CALCULATION (STATE ONLY) =================== */
+/* =================== CHART =================== */
 function drawChart(canvas, labels, series){
   const ctx = canvas.getContext("2d");
   const w = canvas.width = canvas.clientWidth, h = canvas.height = canvas.clientHeight;
@@ -310,7 +283,6 @@ function drawChart(canvas, labels, series){
   ctx.strokeStyle="#e6ecf7"; ctx.lineWidth=1; ctx.beginPath();
   for(let i=0;i<=4;i++){ const y=padT+(i/4)*ih; ctx.moveTo(padL,y); ctx.lineTo(w-padR,y);} ctx.stroke();
   ctx.fillStyle="#66789b"; ctx.font="11px system-ui";
-  for(let i=0;i<=4;i++){ const val=lo+(i/4)*(hi-lo); ctx.fillText(fmt(Math.round(val)), 6, padT+(1-i/4)*ih+4); }
   const step=Math.max(1,Math.floor(labels.length/6));
   labels.forEach((lab,i)=>{ if(i%step===0||i===labels.length-1){ ctx.fillText(lab, sx(i)-8, h-6);} });
   ctx.strokeStyle="#2b6cff"; ctx.lineWidth=2; ctx.beginPath();
@@ -318,28 +290,23 @@ function drawChart(canvas, labels, series){
   ctx.fillStyle="#2b6cff"; series.forEach((v,i)=>{ const x=sx(i), y=sy(v); ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill(); });
 }
 
-function calculateFromSTATE(){
-  toast("Calculating…");
-  console.log("STATE snapshot used for calculation:", JSON.parse(JSON.stringify(STATE)));
-
-  const r = (STATE.retPct||0)/100;
+/* =================== PROJECTION =================== */
+// math only — no DOM
+function computeProjectionFromSTATE() {
+  const r  = (STATE.retPct||0)/100;
   const dy = (STATE.divPct||0)/100;
-  const horizon = Number.isFinite(STATE.horizon)&&STATE.horizon>0 ? STATE.horizon : 5;
-
-  const assetsNow = (STATE.stocks||0) + (STATE.cash||0) + (STATE.ef||0) + (STATE.props||[]).reduce((s,v)=>s+(v||0),0);
-  const liab0 = STATE.liab||0;
-  const netNow = assetsNow - liab0;
+  const hz = Number.isFinite(STATE.horizon) && STATE.horizon>0 ? STATE.horizon : 5;
 
   let st = STATE.stocks||0;
   const pr = (STATE.props||[]).reduce((s,v)=>s+(v||0),0);
   const cs = (STATE.cash||0) + (STATE.ef||0);
-  let li = liab0;
+  let li = STATE.liab||0;
 
-  const liSteps = STATE.liabYears ? Math.min(STATE.liabYears, horizon) : 0;
-  const liDrop = liSteps ? (li/liSteps) : 0;
+  const liSteps = STATE.liabYears ? Math.min(STATE.liabYears, hz) : 0;
+  const liDrop  = liSteps ? (li/liSteps) : 0;
 
   const rows=[], labels=[], netSeries=[];
-  for(let i=1;i<=horizon;i++){
+  for (let i=1;i<=hz;i++){
     const y = YEAR0 + i - 1;
     const add = ((y<=STATE.semiUntil)? 2*(STATE.semi||0) : 0) + (STATE.monthly||0)*12;
     st += add;
@@ -351,77 +318,109 @@ function calculateFromSTATE(){
     rows.push({y, st:Math.round(st), divs:Math.round(dividends), pr:Math.round(pr), cs:Math.round(cs), li:Math.round(li), nw:Math.round(nw)});
     labels.push(String(y)); netSeries.push(nw);
   }
+  return { rows, labels, netSeries, pr };
+}
 
-  // KPIs
-  $("#assetsAED").textContent = fmt(assetsNow) + " AED";
-  $("#liabOut").textContent   = fmt(liab0) + " AED";
-  $("#nwAED").textContent     = fmt(netNow) + " AED";
-  $("#hzOut").textContent     = horizon + "y";
+// update only horizon-dependent parts
+function renderProjection({rows, labels, netSeries, pr}) {
+  // Horizon KPI
+  $("#hzOut").textContent = (STATE.horizon||5) + "y";
 
-  // Table (reverse for quick read)
-  const tb=$("#projTable tbody"); tb.innerHTML="";
+  // Table body
+  const tb = $("#projTable tbody"); tb.innerHTML = "";
   rows.slice().reverse().forEach(r=>{
     const tr=document.createElement("tr");
-    tr.innerHTML = `<td>${r.y}</td><td>${fmt(r.st)}</td><td>${fmt(r.divs)}</td><td>${fmt(r.pr)}</td><td>${fmt(r.cs)}</td><td>${fmt(r.li)}</td><td><strong>${fmt(r.nw)}</strong></td>`;
+    tr.innerHTML = `<td>${r.y}</td><td>${fmt(r.st)}</td><td>${fmt(r.divs)}</td>
+                    <td>${fmt(r.pr)}</td><td>${fmt(r.cs)}</td><td>${fmt(r.li)}</td>
+                    <td><strong>${fmt(r.nw)}</strong></td>`;
     tb.appendChild(tr);
   });
 
+  // Chart
   drawChart($("#chart"), labels, netSeries);
 
   // Retirement snapshot
+  const projectedNet = rows.at(-1)?.nw ?? 0;
   const swr = (STATE.swr||0)/100, spend = STATE.retSpend||0;
   let propFactor=0; if(STATE.includeProp==="half") propFactor=.5; if(STATE.includeProp==="yes") propFactor=1;
-  const projectedNet = rows.length ? rows[rows.length-1].nw : netNow;
   const withdrawalBase = projectedNet - pr + pr*propFactor;
   const swrIncome = withdrawalBase * swr;
-  const divIncome = withdrawalBase * 0.35 * dy;
+  const divIncome = withdrawalBase * 0.35 * ((STATE.divPct||0)/100);
+
+  $("#retProj").textContent = fmt(projectedNet);
+  $("#retBase").textContent = fmt(Math.round(withdrawalBase));
+  $("#retSWR").textContent  = fmt(Math.round(swrIncome));
+  $("#retDivs").textContent = fmt(Math.round(divIncome));
+
   const ok = (swrIncome + divIncome) >= spend;
   const cls = ok ? "ok" : ((swrIncome+divIncome)>0.8*spend ? "warn" : "bad");
   const txt = ok ? "On track ✅" : ((swrIncome+divIncome)>0.8*spend ? "Close — needs tweaks ⚠️" : "Shortfall ⛔");
-  $("#retirement").innerHTML = `
-    <div class="kpis" style="margin-top:8px">
-      <div class="stat"><span class="muted">Projected Net @ Horizon</span><strong>${fmt(projectedNet)} AED</strong></div>
-      <div class="stat"><span class="muted">Withdrawal Base</span><strong>${fmt(Math.round(withdrawalBase))} AED</strong></div>
-      <div class="stat"><span class="muted">SWR Income</span><strong>${fmt(Math.round(swrIncome))} AED/yr</strong></div>
-      <div class="stat"><span class="muted">Est. Dividends</span><strong>${fmt(Math.round(divIncome))} AED/yr</strong></div>
-    </div>
-    <p class="tip" style="margin-top:8px">Target spend: <strong>${fmt(spend)} AED/yr</strong> — <span class="${cls}"><strong>${txt}</strong></span></p>
-  `;
+  $("#retMsg").innerHTML =
+    `Target spend: <strong>${fmt(spend)} AED/yr</strong> — <span class="${cls}"><strong>${txt}</strong></span>`;
+}
+
+/* =================== CALCULATE FLOW =================== */
+function calculateFromSTATE(){
+  toast("Calculating…");
+
+  // Current (not horizon-dependent) KPIs
+  const assetsNow = (STATE.stocks||0) + (STATE.cash||0) + (STATE.ef||0) + (STATE.props||[]).reduce((s,v)=>s+(v||0),0);
+  const liab0 = STATE.liab||0;
+  const netNow = assetsNow - liab0;
+  $("#assetsAED").textContent = fmt(assetsNow);
+  $("#liabOut").textContent   = fmt(liab0);
+  $("#nwAED").textContent     = fmt(netNow);
+
+  // Projection
+  const proj = computeProjectionFromSTATE();
+  renderProjection(proj);
+
+  // Sync horizon selectors
+  fillHorizonOptions($("#hzRes"), STATE.horizon);
+  const hzWizard = $("#horizon"); if (hzWizard) hzWizard.value = String(STATE.horizon);
 
   // Show results
-  $("#results").classList.remove("hide");
-  
+  $("#results").style.display = "block";
+  $("#bar").style.width = "100%";
   $("#results").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
 /* =================== BOOT =================== */
 document.addEventListener("DOMContentLoaded", ()=>{
   // collect steps
-  Array.from(document.querySelectorAll(".step")).forEach(s=>steps.push(s));
-
-  // hydrate all steps from STATE
+  $$(".step").forEach(s=>steps.push(s));
+  // hydrate UI
   hydrateStep1(); hydrateStep2(); hydrateStep3(); hydrateStep4();
+  fillHorizonOptions($("#hzRes"), STATE.horizon);
 
   // add property
   $("#addProp").addEventListener("click", ()=>{ $("#propList").appendChild(propRow(0)); });
 
-  // NAV — on Next, COLLECT into STATE first
-  $("#next1").addEventListener("click", ()=>{ collectStep1();hideResults(); showStep(2); });
-  $("#next2").addEventListener("click", ()=>{ collectStep2();hideResults(); showStep(3); });
-  $("#next3").addEventListener("click", ()=>{ collectStep3();hideResults(); showStep(4); });
-  $$(".step [data-back]").forEach(b=> b.addEventListener("click", ()=> {hideResults(); showStep(cur-1);}));
+  // NAV — collect into STATE then move
+  $("#next1").addEventListener("click", ()=>{ collectStep1(); hideResults(); showStep(2); });
+  $("#next2").addEventListener("click", ()=>{ collectStep2(); hideResults(); showStep(3); });
+  $("#next3").addEventListener("click", ()=>{ collectStep3(); hideResults(); showStep(4); });
+  $$(".step [data-back]").forEach(b=> b.addEventListener("click", ()=>{ hideResults(); showStep(cur-1); }));
 
   // Calculate uses ONLY STATE
   $("#calc").addEventListener("click", ()=>{ collectStep4(); calculateFromSTATE(); });
 
+  // Results Horizon change — recompute+render only projection
+  $("#hzRes").addEventListener("change", (e)=>{
+    const hz = parseInt(e.target.value, 10);
+    STATE.horizon = Number.isFinite(hz) && hz > 0 ? hz : 5;
+    renderProjection(computeProjectionFromSTATE());
+  });
+
   // Edit & Reset
-  $("#editAgain").addEventListener("click", ()=>   {hideResults();
- showStep(1);});
+  $("#editAgain").addEventListener("click", ()=>{ hideResults(); showStep(1); });
   $("#reset").addEventListener("click", ()=>{ Object.assign(STATE, {
       stocks:124780, cash:10000, ef:300000, props:[666667,400000,173333,40000],
       liab:172000, liabYears:4, monthly:5000, semi:95420, semiUntil:2028,
       retPct:8, divPct:3, horizon:5, retSpend:240000, swr:4, includeProp:"no"
-    }); hydrateStep1(); hydrateStep2(); hydrateStep3(); hydrateStep4(); showStep(1); });
+    });
+    hydrateStep1(); hydrateStep2(); hydrateStep3(); hydrateStep4(); hideResults(); showStep(1); setProgress();
+  });
 
   // Start
   showStep(1); setProgress();
