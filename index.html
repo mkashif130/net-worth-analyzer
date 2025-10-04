@@ -173,7 +173,13 @@ function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("sh
 const steps = [];
 let cur = 1;
 function setProgress(){ $("#bar").style.width = ((cur-1)/(steps.length))*100 + "%"; }
-function showStep(n){ cur=n; steps.forEach(s=>s.classList.toggle("hide", +s.dataset.step!==n)); $("#results")?.classList.add("hide"); setProgress(); }
+function showStep(n){
+  cur = n;
+  steps.forEach(s => s.classList.toggle("hide", +s.dataset.step !== n));
+  setProgress();           // ❌ don't touch #results here anymore
+}
+const hideResults = () => { const r = document.getElementById("results"); if (r) r.classList.add("hide"); };
+
 
 /* =================== UI BINDING =================== */
 // Populate inputs from STATE
@@ -332,7 +338,7 @@ function calculateFromSTATE(){
 
   // Show results
   $("#results").classList.remove("hide");
-  showStep(steps.length);
+  
   $("#results").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
@@ -348,16 +354,17 @@ document.addEventListener("DOMContentLoaded", ()=>{
   $("#addProp").addEventListener("click", ()=>{ $("#propList").appendChild(propRow(0)); });
 
   // NAV — on Next, COLLECT into STATE first
-  $("#next1").addEventListener("click", ()=>{ collectStep1(); showStep(2); });
-  $("#next2").addEventListener("click", ()=>{ collectStep2(); showStep(3); });
-  $("#next3").addEventListener("click", ()=>{ collectStep3(); showStep(4); });
-  $$(".step [data-back]").forEach(b=> b.addEventListener("click", ()=> showStep(cur-1)));
+  $("#next1").addEventListener("click", ()=>{ collectStep1();hideResults(); showStep(2); });
+  $("#next2").addEventListener("click", ()=>{ collectStep2();hideResults(); showStep(3); });
+  $("#next3").addEventListener("click", ()=>{ collectStep3();hideResults(); showStep(4); });
+  $$(".step [data-back]").forEach(b=> b.addEventListener("click", ()=> hideResults(); showStep(cur-1)));
 
   // Calculate uses ONLY STATE
   $("#calc").addEventListener("click", ()=>{ collectStep4(); calculateFromSTATE(); });
 
   // Edit & Reset
-  $("#editAgain").addEventListener("click", ()=> showStep(1));
+  $("#editAgain").addEventListener("click", ()=>   hideResults();
+ showStep(1));
   $("#reset").addEventListener("click", ()=>{ Object.assign(STATE, {
       stocks:124780, cash:10000, ef:300000, props:[666667,400000,173333,40000],
       liab:172000, liabYears:4, monthly:5000, semi:95420, semiUntil:2028,
