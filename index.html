@@ -357,7 +357,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
   $("#next1").addEventListener("click", ()=>{ collectStep1();hideResults(); showStep(2); });
   $("#next2").addEventListener("click", ()=>{ collectStep2();hideResults(); showStep(3); });
   $("#next3").addEventListener("click", ()=>{ collectStep3();hideResults(); showStep(4); });
-  $$(".step [data-back]").forEach(b=> b.addEventListener("click", ()=> hideResults(); showStep(cur-1)));
+  $$(".step [data-back]").forEach(b=> b.addEventListener("click", ()=> {hideResults(); showStep(cur-1);}));
 
   // Calculate uses ONLY STATE
   $("#calc").addEventListener("click", ()=>{ collectStep4(); calculateFromSTATE(); });
