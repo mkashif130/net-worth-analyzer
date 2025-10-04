@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AED Net Worth Planner — V1 (State-driven)</title>
+<title>AED Net Worth Planner — V1.1 (Multi-Loans, Empty Defaults)</title>
 <style>
   :root{
     --bg:#f7f9fc; --card:#ffffff; --ink:#0f172a; --muted:#5b6b88; --line:#e5e9f2; --accent:#2b6cff;
-    --ok:#27a36a; --warn:#d4a018; --bad:#e05252; --chip:#eef3ff;
+    --ok:#27a36a; --warn:#d4a018; --bad:#e05252;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial}
   h1,h2,h3{margin:0 0 .5rem} h1{font-size:1.28rem} h2{font-size:1.05rem} h3{font-size:.95rem;color:var(--muted)}
-  .wrap{max-width:860px;margin:28px auto;padding:0 16px}
+  .wrap{max-width:980px;margin:28px auto;padding:0 16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 6px 24px #0b1a3320}
   .row{display:flex;gap:12px;flex-wrap:wrap} .row>div{flex:1 1 240px;min-width:220px}
   label{display:block;font-size:.85rem;color:#3b475d;margin:2px 0 6px}
@@ -21,37 +21,36 @@
   button{cursor:pointer;background:linear-gradient(180deg,#2b6cff,#2158d1);border:1px solid #1e4fc0;color:#fff}
   button.ghost{background:#f2f6ff;border-color:#d7e5ff;color:#1b3b8d}
   .progress{height:8px;background:#edf2ff;border-radius:999px;overflow:hidden;margin:10px 0 16px;border:1px solid #dfe7fb}
-  .bar{height:100%;background:#2b6cff;width:0%;transition:width .25s ease}
+  .bar{height:100%;background:var(--accent);width:0%;transition:width .25s ease}
   .hide{display:none}
+  .groupHead{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+  .mini{font-size:.86rem;color:#6a7b98}
 
   /* Results layout polish */
   .results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
   .hz-picker{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
   .hz-picker select{min-width:120px}
-  .section-title{margin:14px 0 8px;font-weight:600;color:#2b3a59}
   .kpis{display:grid;gap:12px}
   .kpis--results{grid-template-columns:repeat(4,1fr)}
   .kpis--ret{grid-template-columns:repeat(4,1fr)}
   .stat{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid #e6ebf5;border-radius:12px;background:#fbfdff}
-  .stat__label{font-size:.83rem;color:#6a7b98}
-  .stat__value{display:flex;align-items:baseline;gap:6px}
-  .stat__value strong{font-size:1.22rem;letter-spacing:.2px;font-variant-numeric:tabular-nums}
-  .unit{font-size:.82rem;color:#8a99b6}
+  .stat strong{font-size:1.18rem;font-variant-numeric:tabular-nums}
+  .unit{font-size:.82rem;color:#8a99b6;margin-left:6px}
   .stat--emph{background:#f6fbff;border-color:#e2f1ff}
-  .table{width:100%;border-collapse:collapse;margin-top:10px;font-variant-numeric:tabular-nums}
+  .grid-proj{display:grid;grid-template-columns:1.2fr 1fr;gap:12px;margin-top:10px}
+  .table{width:100%;border-collapse:collapse;margin-top:0;font-variant-numeric:tabular-nums}
   .table th,.table td{padding:8px 10px;border-bottom:1px dashed #e1e7f3;text-align:right}
   .table th:first-child,.table td:first-child{text-align:left}
   .table thead th{font-weight:600;color:#415274}
   .table tbody tr:nth-child(odd){background:#fafcff}
   .table .th--emph, .table td:last-child{font-weight:700;color:#1b3b8d}
   canvas{background:#fff;border:1px solid #e7edf7;border-radius:12px}
-  .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
-  .tip{background:#f6fbff;border:1px solid #e2f1ff;border-radius:10px;padding:8px;color:#31507f}
+  .tip{background:#f6fbff;border:1px solid #e2f1ff;border-radius:10px;padding:8px;color:#31507f;margin:8px 0}
   .callout{margin:10px 0 0;padding:10px 12px;border:1px solid #e6efff;background:#f6faff;border-radius:10px;color:#314e84}
   .results-actions{display:flex;justify-content:space-between;gap:10px;margin-top:16px}
   #toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:8px 12px;border-radius:10px;box-shadow:0 8px 20px #0002;opacity:0;pointer-events:none;transition:.25s}
   #toast.show{opacity:1}
-  @media (max-width:720px){ .kpis--results,.kpis--ret{grid-template-columns:1fr 1fr} }
+  @media (max-width:900px){ .grid-proj{grid-template-columns:1fr} .kpis--results,.kpis--ret{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -59,33 +58,38 @@
 <div class="wrap">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
     <h1>AED Net Worth & Retirement Planner</h1>
-    <span style="background:#eef3ff;border:1px solid #d8e3ff;color:#1a3a8f;padding:6px 10px;border-radius:999px;font-size:.84rem">Step-by-step • AED-only</span>
+    <span class="mini">V1.1 • State-driven • AED</span>
   </div>
   <div class="progress"><div class="bar" id="bar"></div></div>
 
   <!-- STEP 1 — ASSETS -->
   <section class="card step" data-step="1">
     <h2>Step 1 — Assets (AED)</h2>
-    <p class="tip">Enter what you own. You can refine later.</p>
+    <p class="tip">Enter what you own. You can add/remove properties as needed.</p>
     <div class="row" style="margin-top:6px">
-      <div><label>Stocks / ETFs</label><input id="stocks" type="number" step="1" placeholder="124780"></div>
-      <div><label>Cash</label><input id="cash" type="number" step="1" placeholder="10000"></div>
-      <div><label>Emergency Fund</label><input id="ef" type="number" step="1" placeholder="300000"></div>
+      <div><label>Stocks / ETFs</label><input id="stocks" type="number" step="1" value="0"></div>
+      <div><label>Cash</label><input id="cash" type="number" step="1" value="0"></div>
+      <div><label>Emergency Fund</label><input id="ef" type="number" step="1" value="0"></div>
     </div>
-    <h3 style="margin-top:8px">Properties (AED)</h3>
+    <div class="groupHead"><h3>Properties (AED)</h3><button id="addProp" type="button" class="ghost" style="flex:0 0 auto">+ Add Property</button></div>
     <div id="propList"></div>
-    <div class="row" style="margin-top:6px"><div style="flex:0 0 auto"><button id="addProp" type="button" class="ghost">+ Add Property</button></div></div>
     <div style="display:flex;justify-content:flex-end;margin-top:12px"><button id="next1" type="button">Next</button></div>
   </section>
 
   <!-- STEP 2 — LIABILITIES -->
   <section class="card step hide" data-step="2">
     <h2>Step 2 — Liabilities (AED)</h2>
-    <p class="tip">We’ll model a straight-line payoff.</p>
-    <div class="row">
-      <div><label>Total Liabilities</label><input id="liab" type="number" step="1" placeholder="172000"></div>
-      <div><label>Years to Pay Off</label><input id="liabYears" type="number" step="1" value="4"></div>
-    </div>
+    <p class="tip">Each loan needs an <strong>Amount</strong>, <strong>Rate %</strong>, and <strong>Years remaining</strong>. We’ll amortize annually.</p>
+
+    <div class="groupHead"><h3>Mortgages</h3><button id="addMort" type="button" class="ghost">+ Add Mortgage</button></div>
+    <div id="mortList"></div>
+
+    <div class="groupHead"><h3>Car Loans</h3><button id="addCar" type="button" class="ghost">+ Add Car Loan</button></div>
+    <div id="carList"></div>
+
+    <div class="groupHead"><h3>Other Loans</h3><button id="addOther" type="button" class="ghost">+ Add Other</button></div>
+    <div id="otherList"></div>
+
     <div style="display:flex;justify-content:space-between;margin-top:12px">
       <button class="ghost" type="button" data-back>Back</button>
       <button id="next2" type="button">Next</button>
@@ -95,15 +99,15 @@
   <!-- STEP 3 — PROJECTION -->
   <section class="card step hide" data-step="3">
     <h2>Step 3 — Projection</h2>
-    <p class="tip">How you’ll invest going forward.</p>
+    <p class="tip">Investing assumptions and horizon.</p>
     <div class="row">
-      <div><label>Monthly Investment</label><input id="monthly" type="number" step="1" value="5000"></div>
-      <div><label>Semiannual Investment</label><input id="semi" type="number" step="1" value="95420"></div>
-      <div><label>Semiannual Investments Until (Year)</label><input id="semiUntil" type="number" step="1" value="2028"></div>
+      <div><label>Monthly Investment</label><input id="monthly" type="number" step="1" value="0"></div>
+      <div><label>Semiannual Investment</label><input id="semi" type="number" step="1" value="0"></div>
+      <div><label>Semiannual Investments Until (Year)</label><input id="semiUntil" type="number" step="1" value=""></div>
     </div>
     <div class="row">
-      <div><label>Expected Annual Return (%)</label><input id="retPct" type="number" step="0.1" value="8"></div>
-      <div><label>Dividend Yield (%)</label><input id="divPct" type="number" step="0.1" value="3"></div>
+      <div><label>Expected Annual Return (%)</label><input id="retPct" type="number" step="0.1" value="0"></div>
+      <div><label>Dividend Yield (%)</label><input id="divPct" type="number" step="0.1" value="0"></div>
       <div><label>Projection Horizon</label><select id="horizon"></select></div>
     </div>
     <div style="display:flex;justify-content:space-between;margin-top:12px">
@@ -115,10 +119,10 @@
   <!-- STEP 4 — RETIREMENT -->
   <section class="card step hide" data-step="4">
     <h2>Step 4 — Retirement</h2>
-    <p class="tip">See if you’re on track vs. your yearly target.</p>
+    <p class="tip">Your target spend and withdrawal assumptions.</p>
     <div class="row">
-      <div><label>Target Yearly Spend</label><input id="retSpend" type="number" step="1" placeholder="240000"></div>
-      <div><label>Safe Withdrawal Rate (%)</label><input id="swr" type="number" step="0.1" value="4"></div>
+      <div><label>Target Yearly Spend</label><input id="retSpend" type="number" step="1" value="0"></div>
+      <div><label>Safe Withdrawal Rate (%)</label><input id="swr" type="number" step="0.1" value="0"></div>
       <div>
         <label>Include Property for Withdrawals?</label>
         <select id="includeProp">
@@ -145,28 +149,29 @@
     </div>
 
     <div class="kpis kpis--results">
-      <div class="stat"><div class="stat__label">Total Assets</div><div class="stat__value"><strong id="assetsAED">–</strong><span class="unit">AED</span></div></div>
-      <div class="stat"><div class="stat__label">Liabilities</div>  <div class="stat__value"><strong id="liabOut">–</strong><span class="unit">AED</span></div></div>
-      <div class="stat stat--emph"><div class="stat__label">Net Worth</div><div class="stat__value"><strong id="nwAED">–</strong><span class="unit">AED</span></div></div>
-      <div class="stat"><div class="stat__label">Horizon</div>     <div class="stat__value"><strong id="hzOut">–</strong></div></div>
+      <div class="stat"><div>Total Assets</div><div><strong id="assetsAED">–</strong><span class="unit">AED</span></div></div>
+      <div class="stat"><div>Liabilities</div>  <div><strong id="liabOut">–</strong><span class="unit">AED</span></div></div>
+      <div class="stat stat--emph"><div>Net Worth</div><div><strong id="nwAED">–</strong><span class="unit">AED</span></div></div>
+      <div class="stat"><div>Horizon</div>     <div><strong id="hzOut">–</strong></div></div>
     </div>
 
-    <div class="section-title">Projection <span class="muted">(last year first)</span></div>
-    <canvas id="chart" height="180"></canvas>
+    <div class="grid-proj">
+      <canvas id="chart" height="240"></canvas>
 
-    <table class="table" id="projTable">
-      <thead><tr>
-        <th>Year</th><th>Stocks</th><th>Dividends</th><th>Properties</th><th>Cash+EF</th><th>Liabilities</th><th class="th--emph">Net Worth</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
+      <table class="table" id="projTable">
+        <thead><tr>
+          <th>Year</th><th>Stocks</th><th>Dividends</th><th>Properties</th><th>Cash+EF</th><th>Liabilities</th><th class="th--emph">Net Worth</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
-    <div class="section-title">Retirement Snapshot</div>
+    <h3 style="margin-top:12px">Retirement Snapshot</h3>
     <div class="kpis kpis--ret">
-      <div class="stat"><div class="stat__label">Projected Net @ Horizon</div><div class="stat__value"><strong id="retProj">–</strong><span class="unit">AED</span></div></div>
-      <div class="stat"><div class="stat__label">Withdrawal Base</div>        <div class="stat__value"><strong id="retBase">–</strong><span class="unit">AED</span></div></div>
-      <div class="stat"><div class="stat__label">SWR Income</div>             <div class="stat__value"><strong id="retSWR">–</strong><span class="unit">AED/yr</span></div></div>
-      <div class="stat"><div class="stat__label">Est. Dividends</div>         <div class="stat__value"><strong id="retDivs">–</strong><span class="unit">AED/yr</span></div></div>
+      <div class="stat"><div>Projected Net @ Horizon</div><div><strong id="retProj">–</strong><span class="unit">AED</span></div></div>
+      <div class="stat"><div>Withdrawal Base</div>        <div><strong id="retBase">–</strong><span class="unit">AED</span></div></div>
+      <div class="stat"><div>SWR Income</div>             <div><strong id="retSWR">–</strong><span class="unit">AED/yr</span></div></div>
+      <div class="stat"><div>Est. Dividends</div>         <div><strong id="retDivs">–</strong><span class="unit">AED/yr</span></div></div>
     </div>
 
     <p class="callout" id="retMsg"></p>
@@ -179,16 +184,16 @@
 </div>
 
 <script>
-/* =================== GLOBAL STATE =================== */
+/* =================== GLOBAL STATE (empty defaults) =================== */
 const STATE = {
   // Step 1
-  stocks:124780, cash:10000, ef:300000, props:[666667,400000,173333,40000],
-  // Step 2
-  liab:172000, liabYears:4,
+  stocks:0, cash:0, ef:0, props:[],
+  // Step 2 — arrays of {amt, rate, years}
+  mort:[], car:[], other:[],
   // Step 3
-  monthly:5000, semi:95420, semiUntil:2028, retPct:8, divPct:3, horizon:5,
+  monthly:0, semi:0, semiUntil:(new Date()).getFullYear(), retPct:0, divPct:0, horizon:5,
   // Step 4
-  retSpend:240000, swr:4, includeProp:"no"
+  retSpend:0, swr:0, includeProp:"no"
 };
 
 /* =================== HELPERS =================== */
@@ -199,8 +204,7 @@ const YEAR0 = (new Date()).getFullYear();
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 900); }
 
 /* Progress / steps */
-const steps = [];
-let cur = 1;
+const steps = []; let cur = 1;
 function setProgress(){ $("#bar").style.width = ((cur-1)/(steps.length))*100 + "%"; }
 function showStep(n){ cur=n; steps.forEach(s=>s.classList.toggle("hide", +s.dataset.step!==n)); setProgress(); }
 const hideResults = () => { const r=$("#results"); if(r) r.style.display="none"; };
@@ -219,32 +223,43 @@ function fillHorizonOptions(selectEl, value) {
 }
 
 /* =================== UI BINDING =================== */
-// Hydrate steps from STATE
 function hydrateStep1(){
   $("#stocks").value=STATE.stocks; $("#cash").value=STATE.cash; $("#ef").value=STATE.ef;
   const list=$("#propList"); list.innerHTML="";
   STATE.props.forEach(v=> list.appendChild(propRow(v)));
 }
-function hydrateStep2(){ $("#liab").value=STATE.liab; $("#liabYears").value=STATE.liabYears; }
+
+function hydrateStep2(){
+  renderLoanGroup($("#mortList"), STATE.mort, "mort");
+  renderLoanGroup($("#carList"), STATE.car, "car");
+  renderLoanGroup($("#otherList"), STATE.other, "other");
+}
+
 function hydrateStep3(){
   fillHorizonOptions($("#horizon"), STATE.horizon);
-  $("#monthly").value=STATE.monthly; $("#semi").value=STATE.semi; $("#semiUntil").value=STATE.semiUntil;
+  $("#monthly").value=STATE.monthly; $("#semi").value=STATE.semi; $("#semiUntil").value=STATE.semiUntil||"";
   $("#retPct").value=STATE.retPct; $("#divPct").value=STATE.divPct;
 }
-function hydrateStep4(){ $("#retSpend").value=STATE.retSpend; $("#swr").value=STATE.swr; $("#includeProp").value=STATE.includeProp; }
+function hydrateStep4(){
+  $("#retSpend").value=STATE.retSpend; $("#swr").value=STATE.swr; $("#includeProp").value=STATE.includeProp;
+}
 
-// Collect inputs into STATE (on Next)
+/* Collectors */
 function collectStep1(){
   STATE.stocks=+($("#stocks").value||0);
   STATE.cash=+($("#cash").value||0);
   STATE.ef=+($("#ef").value||0);
-  STATE.props = $$("#propList input").map(i=>+(i.value||0));
+  STATE.props = $$("#propList input").map(i=>+(i.value||0)).filter(v=>v>0);
 }
-function collectStep2(){ STATE.liab=+($("#liab").value||0); STATE.liabYears=+($("#liabYears").value||0); }
+function collectStep2(){
+  STATE.mort = grabLoansFrom($("#mortList"));
+  STATE.car  = grabLoansFrom($("#carList"));
+  STATE.other= grabLoansFrom($("#otherList"));
+}
 function collectStep3(){
   STATE.monthly=+($("#monthly").value||0);
   STATE.semi=+($("#semi").value||0);
-  STATE.semiUntil=+($("#semiUntil").value||YEAR0+3);
+  STATE.semiUntil=+($("#semiUntil").value||YEAR0);
   STATE.retPct=+($("#retPct").value||0);
   STATE.divPct=+($("#divPct").value||0);
   const hz=parseInt($("#horizon").value,10); STATE.horizon = Number.isFinite(hz)&&hz>0?hz:5;
@@ -255,20 +270,45 @@ function collectStep4(){
   STATE.includeProp=$("#includeProp").value || "no";
 }
 
-// Property row
+/* Dynamic rows */
 function propRow(value=0){
   const wrap=document.createElement("div"); wrap.className="row"; wrap.style.marginTop="6px";
   wrap.innerHTML = `
-    <div><input type="number" step="1" value="${value||""}" placeholder="e.g., 666667"></div>
-    <div style="flex:0 0 auto"><button type="button" class="ghost del">✕</button></div>`;
+    <div><label>Property Value</label><input type="number" step="1" value="${value||""}" placeholder="e.g., 1000000"></div>
+    <div style="flex:0 0 auto"><label>&nbsp;</label><button type="button" class="ghost del">✕</button></div>`;
   wrap.querySelector(".del").addEventListener("click", ()=>{
-    wrap.remove();
-    STATE.props = $$("#propList input").map(i=>+(i.value||0));
+    wrap.remove(); STATE.props = $$("#propList input").map(i=>+(i.value||0)).filter(v=>v>0);
   });
   wrap.querySelector("input").addEventListener("change", ()=>{
-    STATE.props = $$("#propList input").map(i=>+(i.value||0));
+    STATE.props = $$("#propList input").map(i=>+(i.value||0)).filter(v=>v>0);
   });
   return wrap;
+}
+function loanRow(item={amt:0, rate:0, years:0}){
+  const row=document.createElement("div"); row.className="row"; row.style.marginTop="6px";
+  row.innerHTML=`
+    <div><label>Amount</label><input type="number" step="1" value="${item.amt||""}" placeholder="e.g., 500000"></div>
+    <div><label>Rate %</label><input type="number" step="0.1" value="${item.rate||""}" placeholder="e.g., 4.0"></div>
+    <div><label>Years Left</label><input type="number" step="1" value="${item.years||""}" placeholder="e.g., 15"></div>
+    <div style="flex:0 0 auto"><label>&nbsp;</label><button class="ghost del" type="button">✕</button></div>`;
+  return row;
+}
+function renderLoanGroup(container, arr, key){
+  container.innerHTML="";
+  if(!Array.isArray(arr) || arr.length===0){ /* show one empty row for convenience */ arr=[{amt:0,rate:0,years:0}]; }
+  arr.forEach(it=>{
+    const r = loanRow(it);
+    r.querySelector(".del").addEventListener("click", ()=>{ r.remove(); STATE[key]=grabLoansFrom(container); });
+    r.querySelectorAll("input").forEach(inp=> inp.addEventListener("change", ()=>{ STATE[key]=grabLoansFrom(container); }));
+    container.appendChild(r);
+  });
+}
+function grabLoansFrom(container){
+  const rows = Array.from(container.querySelectorAll(".row"));
+  return rows.map(r=>{
+    const [amt,rate,years] = Array.from(r.querySelectorAll("input")).map(i=>+(i.value||0));
+    return {amt, rate, years};
+  }).filter(x=>x.amt>0 && x.years>0);
 }
 
 /* =================== CHART =================== */
@@ -277,17 +317,40 @@ function drawChart(canvas, labels, series){
   const w = canvas.width = canvas.clientWidth, h = canvas.height = canvas.clientHeight;
   ctx.clearRect(0,0,w,h); ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h);
   if(!series || series.length<2){ ctx.fillStyle="#66789b"; ctx.font="12px system-ui"; ctx.fillText("Projection will appear here", 12, 20); return; }
-  const padL=44,padR=10,padT=10,padB=22, iw=w-padL-padR, ih=h-padT-padB;
+  const padL=50,padR=10,padT=10,padB=24, iw=w-padL-padR, ih=h-padT-padB;
   const min=Math.min(...series), max=Math.max(...series), lo=min*0.95, hi=max*1.05;
   const sx=i=> padL + (i/(series.length-1))*iw, sy=v=> padT + ih - ((v-lo)/(hi-lo))*ih;
   ctx.strokeStyle="#e6ecf7"; ctx.lineWidth=1; ctx.beginPath();
   for(let i=0;i<=4;i++){ const y=padT+(i/4)*ih; ctx.moveTo(padL,y); ctx.lineTo(w-padR,y);} ctx.stroke();
   ctx.fillStyle="#66789b"; ctx.font="11px system-ui";
+  for(let i=0;i<=4;i++){ const val=lo+(i/4)*(hi-lo); ctx.fillText(fmt(Math.round(val)), 6, padT+(1-i/4)*ih+4); }
   const step=Math.max(1,Math.floor(labels.length/6));
-  labels.forEach((lab,i)=>{ if(i%step===0||i===labels.length-1){ ctx.fillText(lab, sx(i)-8, h-6);} });
+  labels.forEach((lab,i)=>{ if(i%step===0||i===labels.length-1){ ctx.fillText(lab, sx(i)-10, h-6);} });
   ctx.strokeStyle="#2b6cff"; ctx.lineWidth=2; ctx.beginPath();
   series.forEach((v,i)=>{ const x=sx(i), y=sy(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.stroke();
   ctx.fillStyle="#2b6cff"; series.forEach((v,i)=>{ const x=sx(i), y=sy(v); ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill(); });
+}
+
+/* =================== LOAN MATH =================== */
+// returns array of remaining balances for each year 1..horizon
+function amortizationBalances(P, rAnnual, years, horizon){
+  const r = (rAnnual||0)/100;
+  const n = Math.max(1, years|0);
+  const h = Math.max(1, horizon|0);
+  const pay = r>0 ? (P * (r) / (1 - Math.pow(1+r, -n))) : (P / n);
+  let bal = P;
+  const out=[];
+  for(let y=1;y<=h;y++){
+    if(y<=n){
+      const interest = bal * r;
+      const principal = Math.min(pay - interest, bal);
+      bal = Math.max(0, bal - principal);
+    }else{
+      bal = 0;
+    }
+    out.push(Math.round(bal));
+  }
+  return out;
 }
 
 /* =================== PROJECTION =================== */
@@ -300,10 +363,19 @@ function computeProjectionFromSTATE() {
   let st = STATE.stocks||0;
   const pr = (STATE.props||[]).reduce((s,v)=>s+(v||0),0);
   const cs = (STATE.cash||0) + (STATE.ef||0);
-  let li = STATE.liab||0;
 
-  const liSteps = STATE.liabYears ? Math.min(STATE.liabYears, hz) : 0;
-  const liDrop  = liSteps ? (li/liSteps) : 0;
+  // liabilities by year = sum of balances across all loans
+  const liByYear = new Array(hz).fill(0);
+
+  const addLoanSeries = (arr=[])=>{
+    arr.forEach(({amt,rate,years})=>{
+      const series = amortizationBalances(amt||0, rate||0, years||0, hz);
+      for(let i=0;i<hz;i++){ liByYear[i] += series[i]||0; }
+    });
+  };
+  addLoanSeries(STATE.mort);
+  addLoanSeries(STATE.car);
+  addLoanSeries(STATE.other);
 
   const rows=[], labels=[], netSeries=[];
   for (let i=1;i<=hz;i++){
@@ -312,9 +384,11 @@ function computeProjectionFromSTATE() {
     st += add;
     const dividends = st * dy;
     st *= (1 + r);
-    if(i<=liSteps){ li = Math.max(0, li - liDrop); } else { li = 0; }
+
+    const li = liByYear[i-1] || 0;
     const totalAssets = st + pr + cs;
     const nw = totalAssets - li;
+
     rows.push({y, st:Math.round(st), divs:Math.round(dividends), pr:Math.round(pr), cs:Math.round(cs), li:Math.round(li), nw:Math.round(nw)});
     labels.push(String(y)); netSeries.push(nw);
   }
@@ -323,10 +397,9 @@ function computeProjectionFromSTATE() {
 
 // update only horizon-dependent parts
 function renderProjection({rows, labels, netSeries, pr}) {
-  // Horizon KPI
   $("#hzOut").textContent = (STATE.horizon||5) + "y";
 
-  // Table body
+  // Table body (last year first)
   const tb = $("#projTable tbody"); tb.innerHTML = "";
   rows.slice().reverse().forEach(r=>{
     const tr=document.createElement("tr");
@@ -363,17 +436,19 @@ function renderProjection({rows, labels, netSeries, pr}) {
 function calculateFromSTATE(){
   toast("Calculating…");
 
-  // Current (not horizon-dependent) KPIs
+  // Current KPIs (not horizon-dependent)
   const assetsNow = (STATE.stocks||0) + (STATE.cash||0) + (STATE.ef||0) + (STATE.props||[]).reduce((s,v)=>s+(v||0),0);
-  const liab0 = STATE.liab||0;
+
+  // current total liabilities = sum of current balances (year 0) approximated by year-1 balances from amortization
+  const tmp = computeProjectionFromSTATE(); // gives year-1 balances already; use first li
+  const liab0 = tmp.rows?.[0]?.li || 0;
   const netNow = assetsNow - liab0;
   $("#assetsAED").textContent = fmt(assetsNow);
   $("#liabOut").textContent   = fmt(liab0);
   $("#nwAED").textContent     = fmt(netNow);
 
-  // Projection
-  const proj = computeProjectionFromSTATE();
-  renderProjection(proj);
+  // Projection render
+  renderProjection(tmp);
 
   // Sync horizon selectors
   fillHorizonOptions($("#hzRes"), STATE.horizon);
@@ -389,12 +464,18 @@ function calculateFromSTATE(){
 document.addEventListener("DOMContentLoaded", ()=>{
   // collect steps
   $$(".step").forEach(s=>steps.push(s));
-  // hydrate UI
+
+  // Hydrate UI (empty defaults)
   hydrateStep1(); hydrateStep2(); hydrateStep3(); hydrateStep4();
   fillHorizonOptions($("#hzRes"), STATE.horizon);
 
-  // add property
+  // Assets actions
   $("#addProp").addEventListener("click", ()=>{ $("#propList").appendChild(propRow(0)); });
+
+  // Liabilities add buttons
+  $("#addMort").addEventListener("click", ()=>{ const x=loanRow(); $("#mortList").appendChild(x); });
+  $("#addCar").addEventListener("click", ()=>{ const x=loanRow(); $("#carList").appendChild(x); });
+  $("#addOther").addEventListener("click", ()=>{ const x=loanRow(); $("#otherList").appendChild(x); });
 
   // NAV — collect into STATE then move
   $("#next1").addEventListener("click", ()=>{ collectStep1(); hideResults(); showStep(2); });
@@ -414,10 +495,12 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
   // Edit & Reset
   $("#editAgain").addEventListener("click", ()=>{ hideResults(); showStep(1); });
-  $("#reset").addEventListener("click", ()=>{ Object.assign(STATE, {
-      stocks:124780, cash:10000, ef:300000, props:[666667,400000,173333,40000],
-      liab:172000, liabYears:4, monthly:5000, semi:95420, semiUntil:2028,
-      retPct:8, divPct:3, horizon:5, retSpend:240000, swr:4, includeProp:"no"
+  $("#reset").addEventListener("click", ()=>{
+    Object.assign(STATE, {
+      stocks:0, cash:0, ef:0, props:[],
+      mort:[], car:[], other:[],
+      monthly:0, semi:0, semiUntil:YEAR0, retPct:0, divPct:0, horizon:5,
+      retSpend:0, swr:0, includeProp:"no"
     });
     hydrateStep1(); hydrateStep2(); hydrateStep3(); hydrateStep4(); hideResults(); showStep(1); setProgress();
   });
