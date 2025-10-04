@@ -30,6 +30,43 @@
   .tip{background:#f6fbff;border:1px solid #e2f1ff;border-radius:10px;padding:8px;color:#31507f}
   #toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:8px 12px;border-radius:10px;box-shadow:0 8px 20px #0002;opacity:0;pointer-events:none;transition:.25s}
   #toast.show{opacity:1}
+
+  /* Results header */
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.hz-picker{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
+.hz-picker select{min-width:120px}
+
+/* Section titles */
+.section-title{margin:14px 0 8px;font-weight:600;color:#2b3a59}
+
+/* KPI grid polish */
+.kpis--results{grid-template-columns:repeat(4,1fr);gap:12px}
+.kpis--ret{grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid #e6ebf5;border-radius:12px;background:#fbfdff}
+.stat__label{font-size:.83rem;color:#6a7b98}
+.stat__value{display:flex;align-items:baseline;gap:6px}
+.stat__value strong{font-size:1.22rem;letter-spacing:.2px;font-variant-numeric:tabular-nums}
+.stat .unit{font-size:.82rem;color:#8a99b6}
+.stat--emph{background:#f6fbff;border-color:#e2f1ff}
+
+/* Table */
+.table--tight th,.table--tight td{padding:8px 10px}
+.table thead th{font-weight:600;color:#415274}
+.table tbody tr:nth-child(odd){background:#fafcff}
+.table td strong{font-weight:700}
+.table .th--emph, .table td:last-child{font-weight:700;color:#1b3b8d}
+
+/* Callout under retirement snapshot */
+.callout{margin:10px 0 0;padding:10px 12px;border:1px solid #e6efff;background:#f6faff;border-radius:10px;color:#314e84}
+
+/* Footer buttons */
+.results-actions{display:flex;justify-content:space-between;gap:10px;margin-top:16px}
+
+/* Responsive */
+@media (max-width:720px){
+  .kpis--results, .kpis--ret{grid-template-columns:1fr 1fr}
+}
+
 </style>
 </head>
 <body>
@@ -120,33 +157,48 @@
   </section>
 
   <!-- RESULTS -->
-  <section class="card hide" id="results">
+<section class="card" id="results" style="display:none">
+  <div class="results-header">
     <h2>Results</h2>
-    <div class="kpis" style="margin-top:10px">
-      <div class="stat"><span class="muted">Total Assets</span><strong id="assetsAED">–</strong></div>
-      <div class="stat"><span class="muted">Liabilities</span><strong id="liabOut">–</strong></div>
-      <div class="stat"><span class="muted">Net Worth</span><strong id="nwAED">–</strong></div>
-      <div class="stat"><span class="muted">Horizon</span><strong id="hzOut">–</strong></div>
-    </div>
+    <label class="hz-picker">
+      <span>Horizon</span>
+      <select id="hzRes"></select>
+    </label>
+  </div>
 
-    <canvas id="chart" height="180" style="margin-top:12px"></canvas>
+  <div class="kpis kpis--results">
+    <div class="stat"><div class="stat__label">Total Assets</div><div class="stat__value"><strong id="assetsAED">–</strong><span class="unit">AED</span></div></div>
+    <div class="stat"><div class="stat__label">Liabilities</div>  <div class="stat__value"><strong id="liabOut">–</strong><span class="unit">AED</span></div></div>
+    <div class="stat stat--emph"><div class="stat__label">Net Worth</div><div class="stat__value"><strong id="nwAED">–</strong><span class="unit">AED</span></div></div>
+    <div class="stat"><div class="stat__label">Horizon</div>     <div class="stat__value"><strong id="hzOut">–</strong></div></div>
+  </div>
 
-    <h3 style="margin-top:14px">Projection (last year first)</h3>
-    <table class="table" id="projTable">
-      <thead><tr>
-        <th>Year</th><th>Stocks</th><th>Dividends</th><th>Properties</th><th>Cash+EF</th><th>Liabilities</th><th>Net Worth</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
+  <div class="section-title">Projection <span class="muted">(last year first)</span></div>
+  <canvas id="chart" height="180"></canvas>
 
-    <h3 style="margin-top:14px">Retirement Snapshot</h3>
-    <div id="retirement"></div>
+  <table class="table table--tight" id="projTable" style="margin-top:10px">
+    <thead><tr>
+      <th>Year</th><th>Stocks</th><th>Dividends</th><th>Properties</th><th>Cash+EF</th><th>Liabilities</th><th class="th--emph">Net Worth</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
 
-    <div style="display:flex;justify-content:space-between;margin-top:16px">
-      <button class="ghost" type="button" id="editAgain">← Edit inputs</button>
-      <button class="ghost" type="button" id="reset">Reset</button>
-    </div>
-  </section>
+  <div class="section-title">Retirement Snapshot</div>
+  <div class="kpis kpis--ret">
+    <div class="stat"><div class="stat__label">Projected Net @ Horizon</div><div class="stat__value"><strong id="retProj">–</strong><span class="unit">AED</span></div></div>
+    <div class="stat"><div class="stat__label">Withdrawal Base</div>        <div class="stat__value"><strong id="retBase">–</strong><span class="unit">AED</span></div></div>
+    <div class="stat"><div class="stat__label">SWR Income</div>             <div class="stat__value"><strong id="retSWR">–</strong><span class="unit">AED/yr</span></div></div>
+    <div class="stat"><div class="stat__label">Est. Dividends</div>         <div class="stat__value"><strong id="retDivs">–</strong><span class="unit">AED/yr</span></div></div>
+  </div>
+
+  <p class="callout" id="retMsg"></p>
+
+  <div class="results-actions">
+    <button class="ghost" type="button" id="editAgain">← Edit inputs</button>
+    <button class="ghost" type="button" id="reset">Reset</button>
+  </div>
+</section>
+
 </div>
 
 <script>
