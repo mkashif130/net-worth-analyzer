@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Net Worth & Retirement Planner — Single File</title>
+<style>
+  :root{
+    --bg:#0b1020;
+    --panel:#121a33;
+    --muted:#8ea0c9;
+    --text:#e8efff;
+    --accent:#6ea8ff;
+    --good:#2ec27e;
+    --warn:#f6c445;
+    --bad:#ff6b6b;
+    --line:#263257;
+    --chip:#1b2647;
+    --input:#0f1530;
+    --ring:#3b5ccc66;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:500 15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial}
+  h1,h2,h3{margin:0 0 .6rem}
+  h1{font-size:1.35rem}
+  h2{font-size:1.05rem;color:#cfe0ff}
+  h3{font-size:.95rem;color:var(--muted)}
+  a{color:var(--accent);text-decoration:none}
+  .wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+  .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+  .card{background:linear-gradient(180deg,var(--panel),#0f1730);border:1px solid #1d294a;border-radius:14px;padding:16px;box-shadow:0 10px 30px #00000033}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row>div{flex:1 1 180px}
+  label{display:block;font-size:.8rem;color:var(--muted);margin:6px 0 6px}
+  input,select,button,textarea{
+    width:100%;padding:10px 12px;border-radius:10px;border:1px solid #263257;background:var(--input);color:var(--text);
+    outline:none;transition:.15s border, .15s box-shadow;font:inherit
+  }
+  input:focus,select:focus,textarea:focus{border-color:#4f6cc8;box-shadow:0 0 0 3px var(--ring)}
+  button{cursor:pointer;background:linear-gradient(180deg,#2b61ff,#2149c9);border:1px solid #183bb0}
+  button.secondary{background:#1a2447;border-color:#263257}
+  button.ghost{background:transparent;border-color:#2a3a6b}
+  .pill{display:inline-flex;gap:8px;align-items:center;background:var(--chip);border:1px solid #223264;color:#cfe0ff;padding:6px 10px;border-radius:999px}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .table{width:100%;border-collapse:collapse;margin-top:8px;font-variant-numeric: tabular-nums}
+  .table th,.table td{border-bottom:1px dashed #274078;padding:8px;text-align:right}
+  .table th:first-child,.table td:first-child{text-align:left}
+  .muted{color:var(--muted)}
+  .stat{display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid #223264;border-radius:12px;background:linear-gradient(180deg,#121a33,#0e152c)}
+  .stat strong{font-size:1.2rem}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .badge{padding:3px 8px;border-radius:8px;font-size:.75rem;border:1px solid #2c3f77;background:#0f1730;color:#cfe0ff}
+  canvas{background:#0a0f22;border:1px solid #1d294a;border-radius:12px}
+  .foot{color:#7890c2;font-size:.8rem;margin-top:14px}
+  .help{font-size:.85rem;color:#a9b9e2}
+  .right{float:right}
+  .ok{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+  .flex{display:flex;gap:8px;align-items:center}
+  .small{font-size:.78rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="row" style="align-items:center;margin-bottom:12px">
+    <h1>Net Worth & Retirement Planner</h1>
+    <span class="pill right small">Single-file • Works on GitHub Pages</span>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: Input -->
+    <section class="card">
+      <h2>1) Inputs</h2>
+      <div class="row">
+        <div>
+          <label>USD → AED rate</label>
+          <input id="usdAed" type="number" step="0.0001" value="3.67">
+        </div>
+        <div>
+          <label>PKR → AED rate</label>
+          <input id="pkrAed" type="number" step="0.0001" value="0.0133333" />
+          <div class="help">Tip: If you think “1 AED = 75 PKR”, then 1 PKR ≈ 0.01333 AED.</div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:12px">Assets</h3>
+      <div class="row">
+        <div>
+          <label>Stocks (USD)</label>
+          <input id="stocksUsd" type="number" step="0.01" placeholder="e.g., 34000">
+        </div>
+        <div>
+          <label>Cash (AED)</label>
+          <input id="cashAed" type="number" step="0.01" placeholder="e.g., 10000">
+        </div>
+        <div>
+          <label>Emergency Fund (AED)</label>
+          <input id="efAed" type="number" step="0.01" placeholder="e.g., 300000">
+        </div>
+      </div>
+
+      <div id="propsWrap" class="row">
+        <div style="flex:1 1 100%">
+          <label>Properties</label>
+          <div id="propList"></div>
+          <button id="addProp" class="secondary" type="button">+ Add Property</button>
+          <div class="help">You can enter values in AED or PKR. The app converts to AED.</div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:12px">Liabilities</h3>
+      <div class="row">
+        <div>
+          <label>Total Liabilities (AED)</label>
+          <input id="liabAed" type="number" step="0.01" placeholder="e.g., 172000">
+        </div>
+      </div>
+
+      <h2 style="margin-top:18px">2) Projection Settings</h2>
+      <div class="row">
+        <div>
+          <label>Monthly Stock Invest (AED)</label>
+          <input id="monthlyAed" type="number" step="1" value="5000">
+        </div>
+        <div>
+          <label>Semiannual Stock Invest (USD)</label>
+          <input id="semiUsd" type="number" step="1" value="26000">
+        </div>
+        <div>
+          <label>Semiannual USD invests until (year)</label>
+          <input id="semiUntil" type="number" step="1" value="2028">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Expected Annual Return (%)</label>
+          <input id="retPct" type="number" step="0.1" value="8">
+        </div>
+        <div>
+          <label>Dividend Yield (%)</label>
+          <input id="divPct" type="number" step="0.1" value="3">
+        </div>
+        <div>
+          <label>Projection Horizon</label>
+          <select id="horizon">
+            <!-- 5..80 step 5 -->
+          </select>
+        </div>
+      </div>
+
+      <h2 style="margin-top:18px">3) Retirement Check</h2>
+      <div class="row">
+        <div>
+          <label>Target Yearly Spend (AED)</label>
+          <input id="retSpend" type="number" step="1" placeholder="e.g., 240000">
+        </div>
+        <div>
+          <label>Safe Withdrawal Rate (%)</label>
+          <input id="swr" type="number" step="0.1" value="4">
+        </div>
+        <div>
+          <label>Include Property in Retirement?</label>
+          <select id="includeProp">
+            <option value="no">No (liquid assets only)</option>
+            <option value="half">Yes, but 50% haircut</option>
+            <option value="yes">Yes, full value</option>
+          </select>
+        </div>
+      </div>
+
+      <h2 style="margin-top:18px">4) (Optional) AI Analysis</h2>
+      <div class="row">
+        <div>
+          <label>OpenAI API key (optional)</label>
+          <input id="apiKey" type="password" placeholder="sk-... (kept in memory; never stored)">
+          <div class="help">If provided, the app asks ChatGPT to analyze your situation. If left empty, a local (offline) analysis is used.</div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <button id="calcBtn" type="button">Calculate & Project</button>
+        <button id="resetBtn" type="button" class="ghost">Reset</button>
+        <span class="badge right" id="saveBadge">autosaved ✓</span>
+      </div>
+    </section>
+
+    <!-- RIGHT: Output -->
+    <section class="card">
+      <h2>Results</h2>
+      <div class="kpis" style="margin-bottom:10px">
+        <div class="stat"><span class="muted">Total Assets</span><strong id="assetsAED">–</strong></div>
+        <div class="stat"><span class="muted">Liabilities</span><strong id="liabAED">–</strong></div>
+        <div class="stat"><span class="muted">Net Worth</span><strong id="nwAED">–</strong></div>
+        <div class="stat"><span class="muted">Net (USD)</span><strong id="nwUSD">–</strong></div>
+      </div>
+
+      <canvas id="chart" height="180"></canvas>
+
+      <h3 style="margin-top:14px">Projection</h3>
+      <table class="table" id="projTable">
+        <thead><tr>
+          <th>Year</th>
+          <th>Stocks (AED)</th>
+          <th>Dividends (AED)</th>
+          <th>Properties (AED)</th>
+          <th>Cash+EF (AED)</th>
+          <th>Liabilities (AED)</th>
+          <th>Net Worth (AED)</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <h3 style="margin-top:14px">AI/Heuristic Analysis</h3>
+      <div class="row">
+        <textarea id="analysis" rows="10" placeholder="Click Calculate to generate analysis..."></textarea>
+      </div>
+
+      <h3 style="margin-top:14px">Retirement Snapshot</h3>
+      <div id="retirement"></div>
+
+      <div class="foot">Note: This tool is for planning and education. Markets and FX rates change; always double-check numbers before decisions.</div>
+    </section>
+  </div>
+</div>
+
+<script>
+/* ---------- Helpers ---------- */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const fmt = n => n===null||isNaN(n) ? "–" : n.toLocaleString(undefined,{maximumFractionDigits:0});
+const fmt2 = n => n===null||isNaN(n) ? "–" : n.toLocaleString(undefined,{maximumFractionDigits:2});
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+const YEAR0 = (new Date()).getFullYear(); // starting year
+const DEFAULT_PROPS = [
+  {value: 50000000, currency: "PKR"},
+  {value: 30000000, currency: "PKR"},
+  {value: 13000000, currency: "PKR"},
+  {value: 3000000, currency: "PKR"},
+];
+
+function readNum(id){ const v = parseFloat($(id).value); return isNaN(v) ? 0 : v; }
+function saveState(){
+  const s = {
+    usdAed: readNum("#usdAed"),
+    pkrAed: readNum("#pkrAed"),
+    stocksUsd: readNum("#stocksUsd"),
+    cashAed: readNum("#cashAed"),
+    efAed: readNum("#efAed"),
+    liabAed: readNum("#liabAed"),
+    monthlyAed: readNum("#monthlyAed"),
+    semiUsd: readNum("#semiUsd"),
+    semiUntil: readNum("#semiUntil"),
+    retPct: readNum("#retPct"),
+    divPct: readNum("#divPct"),
+    horizon: $("#horizon").value,
+    retSpend: readNum("#retSpend"),
+    swr: readNum("#swr"),
+    includeProp: $("#includeProp").value,
+    props: getProps()
+  };
+  localStorage.setItem("nw_state_v2", JSON.stringify(s));
+  $("#saveBadge").textContent = "autosaved ✓";
+}
+function loadState(){
+  const s = JSON.parse(localStorage.getItem("nw_state_v2")||"null");
+  if(!s){ seedDefaults(); return; }
+  $("#usdAed").value = s.usdAed || 3.67;
+  $("#pkrAed").value = s.pkrAed || 0.0133333;
+  $("#stocksUsd").value = s.stocksUsd || 34000;
+  $("#cashAed").value = s.cashAed || 10000;
+  $("#efAed").value = s.efAed || 300000;
+  $("#liabAed").value = s.liabAed || 172000;
+  $("#monthlyAed").value = s.monthlyAed || 5000;
+  $("#semiUsd").value = s.semiUsd || 26000;
+  $("#semiUntil").value = s.semiUntil || 2028;
+  $("#retPct").value = s.retPct || 8;
+  $("#divPct").value = s.divPct || 3;
+  $("#retSpend").value = s.retSpend || 240000;
+  $("#swr").value = s.swr || 4;
+  $("#includeProp").value = s.includeProp || "no";
+  setHorizonOptions();
+  $("#horizon").value = s.horizon || "5";
+  setProps(s.props && s.props.length ? s.props : DEFAULT_PROPS);
+}
+function seedDefaults(){
+  setHorizonOptions();
+  $("#horizon").value = "5";
+  setProps(DEFAULT_PROPS);
+  $("#stocksUsd").value = 34000;
+  $("#cashAed").value = 10000;
+  $("#efAed").value = 300000;
+  $("#liabAed").value = 172000;
+}
+function setHorizonOptions(){
+  const sel = $("#horizon"); sel.innerHTML = "";
+  for(let y=5;y<=80;y+=5){
+    const opt = document.createElement("option");
+    opt.value = String(y); opt.textContent = y + " years";
+    sel.appendChild(opt);
+  }
+}
+function makePropRow(p={value:0,currency:"AED"}){
+  const row = document.createElement("div");
+  row.className = "row";
+  row.style.marginTop = "6px";
+  row.innerHTML = `
+    <div style="flex:2 1 200px">
+      <input type="number" step="0.01" class="propVal" placeholder="Property value">
+    </div>
+    <div style="flex:1 1 120px">
+      <select class="propCur">
+        <option value="AED">AED</option>
+        <option value="PKR">PKR</option>
+      </select>
+    </div>
+    <div style="flex:0 0 auto"><button type="button" class="ghost delProp">✕</button></div>
+  `;
+  row.querySelector(".propVal").value = p.value || 0;
+  row.querySelector(".propCur").value = p.currency || "AED";
+  row.querySelector(".delProp").onclick = () => { row.remove(); saveState(); };
+  row.querySelector(".propVal").oninput = saveState;
+  row.querySelector(".propCur").onchange = saveState;
+  return row;
+}
+function setProps(list){ const box = $("#propList"); box.innerHTML = ""; list.forEach(p=>box.appendChild(makePropRow(p))); }
+function getProps(){
+  return $$("#propList .row").map(el=>({
+    value: parseFloat(el.querySelector(".propVal").value||"0")||0,
+    currency: el.querySelector(".propCur").value
+  }));
+}
+
+/* ---------- Core Calculation ---------- */
+function calcAll(){
+  const usdAed = readNum("#usdAed") || 3.67;
+  const pkrAed = readNum("#pkrAed") || 0.0133333;
+
+  // Assets
+  const stocksUsd = readNum("#stocksUsd");
+  const cashAed = readNum("#cashAed");
+  const efAed = readNum("#efAed");
+  const props = getProps();
+  const liabAed = readNum("#liabAed");
+
+  const stocksAed = stocksUsd * usdAed;
+  const propAed = props.reduce((s,p)=> s + (p.value * (p.currency==="PKR" ? pkrAed : 1)), 0);
+
+  const assets = stocksAed + cashAed + efAed + propAed;
+  const netWorth = assets - liabAed;
+  const netUsd = netWorth / usdAed;
+
+  $("#assetsAED").textContent = fmt(assets) + " AED";
+  $("#liabAED").textContent   = fmt(liabAed) + " AED";
+  $("#nwAED").textContent     = fmt(netWorth) + " AED";
+  $("#nwUSD").textContent     = "$ " + fmt(netUsd);
+
+  // Projection
+  const monthlyAed = readNum("#monthlyAed");
+  const semiUsd = readNum("#semiUsd");
+  const semiUntil = readNum("#semiUntil");
+  const retPct = readNum("#retPct")/100;
+  const divPct = readNum("#divPct")/100;
+  const horizon = parseInt($("#horizon").value,10);
+
+  // Baselines
+  let stock = stocksAed;
+  let properties = propAed;
+  let cashEf = cashAed + efAed;
+  let liab = liabAed;
+
+  // Assume liabilities reduce linearly to zero by end of current 4 years (like earlier),
+  // but if horizon < 4 we scale accordingly.
+  const liabYears = Math.min(horizon, 4);
+  const liabDropPerYear = liabYears>0 ? liab / liabYears : liab;
+
+  const rows = [];
+  const labels = [];
+  const netSeries = [];
+
+  let year = YEAR0;
+  for(let i=1;i<=horizon;i++){
+    const y = year + i - 1;
+
+    // contributions this year
+    const usdContribAed = (y <= semiUntil) ? semiUsd*2*usdAed : 0;
+    const aedContrib = monthlyAed*12;
+
+    stock += usdContribAed + aedContrib;
+
+    const dividends = stock * divPct; // pre-growth
+    stock *= (1 + retPct);            // grow after dividends are counted
+
+    // liabilities reduce
+    if(i <= liabYears){
+      liab = Math.max(0, liab - liabDropPerYear);
+    } else { liab = 0; }
+
+    const totalAssets = stock + properties + cashEf;
+    const nw = totalAssets - liab;
+
+    rows.push({ y,
+      stock: Math.round(stock),
+      divs: Math.round(dividends),
+      props: Math.round(properties),
+      cash: Math.round(cashEf),
+      liab: Math.round(liab),
+      net: Math.round(nw)
+    });
+
+    labels.push(String(y));
+    netSeries.push(nw);
+  }
+
+  // Fill table
+  const tb = $("#projTable tbody"); tb.innerHTML = "";
+  rows.forEach(r=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.y}</td>
+      <td>${fmt(r.stock)}</td>
+      <td>${fmt(r.divs)}</td>
+      <td>${fmt(r.props)}</td>
+      <td>${fmt(r.cash)}</td>
+      <td>${fmt(r.liab)}</td>
+      <td><strong>${fmt(r.net)}</strong></td>
+    `;
+    tb.appendChild(tr);
+  });
+
+  drawLineChart($("#chart"), labels, netSeries);
+
+  // Retirement check
+  retirementCheck(rows[rows.length-1]?.net ?? netWorth);
+
+  // Analysis (AI optional)
+  makeAnalysis({
+    assets, netWorth, liabAed,
+    stocksAed, cashAed, efAed, propAed,
+    retPct, divPct, horizon,
+    series: rows
+  });
+
+  saveState();
+}
+
+/* ---------- Simple Canvas Line Chart (no libs) ---------- */
+function drawLineChart(canvas, labels, series){
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width = canvas.clientWidth;
+  const h = canvas.height = canvas.clientHeight;
+
+  // bg grid
+  ctx.fillStyle = "#0a0f22"; ctx.fillRect(0,0,w,h);
+  const padL=40, padR=12, padT=10, padB=24;
+  const innerW = w - padL - padR, innerH = h - padT - padB;
+
+  const min = Math.min(...series);
+  const max = Math.max(...series);
+  const lo = min*0.95, hi = max*1.05;
+  const scaleY = v => padT + innerH - ( (v - lo) / (hi - lo) )*innerH;
+  const scaleX = i => padL + (i/(series.length-1))*innerW;
+
+  // grid lines
+  ctx.strokeStyle = "#1b274a"; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for(let i=0;i<=4;i++){
+    const y = padT + (i/4)*innerH;
+    ctx.moveTo(padL, y); ctx.lineTo(w-padR, y);
+  }
+  ctx.stroke();
+
+  // axes labels (y)
+  ctx.fillStyle = "#8ea0c9"; ctx.font = "11px system-ui";
+  for(let i=0;i<=4;i++){
+    const v = lo + (i/4)*(hi-lo);
+    ctx.fillText(fmt(Math.round(v)), 6, padT + (1-i/4)*innerH + 4);
+  }
+
+  // x labels
+  const step = Math.max(1, Math.floor(labels.length/6));
+  labels.forEach((lab,i)=>{
+    if(i%step===0 || i===labels.length-1){
+      ctx.fillText(lab, scaleX(i)-8, h-6);
+    }
+  });
+
+  // line
+  ctx.strokeStyle = "#6ea8ff"; ctx.lineWidth = 2;
+  ctx.beginPath();
+  series.forEach((v,i)=>{ const x=scaleX(i), y=scaleY(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  ctx.stroke();
+
+  // dots
+  ctx.fillStyle = "#6ea8ff";
+  series.forEach((v,i)=>{ const x=scaleX(i), y=scaleY(v); ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill(); });
+}
+
+/* ---------- Retirement ---------- */
+function retirementCheck(projectedNet){
+  const spend = readNum("#retSpend");
+  const swr = readNum("#swr")/100;
+  const includeProp = $("#includeProp").value;
+
+  const usdAed = readNum("#usdAed") || 3.67;
+
+  // Rebuild current components to compute "liquid" vs property
+  const stocksAed = readNum("#stocksUsd") * usdAed;
+  const propAed = getProps().reduce((s,p)=> s + p.value * (p.currency==="PKR" ? readNum("#pkrAed")||0.0133333 : 1 ), 0);
+  const liquidNow = stocksAed + readNum("#cashAed") + readNum("#efAed");
+
+  // Use projectedNet as base, but how much of it is considered for SWR?
+  let propFactor = 0;
+  if(includeProp==="yes") propFactor = 1;
+  if(includeProp==="half") propFactor = .5;
+
+  // Approximate: if property is included, add factor*property into withdrawal base.
+  const withdrawalBase = projectedNet - propAed + propAed*propFactor; // net minus full prop + allowed portion
+  const swrIncome = withdrawalBase * swr;
+
+  // Dividend income (assume 3% on stocks portion ~ roughly 1/3 of withdrawalBase when growing; we estimate 35%)
+  // We'll do better: estimate dividends ≈ 3% of (withdrawalBase * 0.35)
+  const divYield = (readNum("#divPct")||3)/100;
+  const divIncome = withdrawalBase * 0.35 * divYield;
+
+  const ok = swrIncome + divIncome >= spend;
+
+  $("#retirement").innerHTML = `
+    <div class="stat">
+      <div>
+        <div class="muted small">Projected Net Worth @ Horizon</div>
+        <div><strong>${fmt(projectedNet)} AED</strong></div>
+      </div>
+      <div>
+        <div class="muted small">Withdrawal Base (incl. property: ${includeProp})</div>
+        <div><strong>${fmt(Math.round(withdrawalBase))} AED</strong></div>
+      </div>
+      <div>
+        <div class="muted small">SWR Income @ ${fmt2(swr*100)}%</div>
+        <div><strong>${fmt(Math.round(swrIncome))} AED/yr</strong></div>
+      </div>
+      <div>
+        <div class="muted small">Est. Dividends</div>
+        <div><strong>${fmt(Math.round(divIncome))} AED/yr</strong></div>
+      </div>
+      <div>
+        <div class="muted small">Target Spend</div>
+        <div><strong>${fmt(spend)} AED/yr</strong></div>
+      </div>
+    </div>
+    <div class="help" style="margin-top:8px">
+      Retirement status:
+      <strong class="${ok?'ok':(swrIncome+divIncome>0.8*spend?'warn':'bad')}">
+        ${ok ? 'On track ✅' : (swrIncome+divIncome>0.8*spend ? 'Close — needs tweak ⚠️' : 'Shortfall — increase savings or delay ⛔')}
+      </strong>
+    </div>
+  `;
+}
+
+/* ---------- Analysis ---------- */
+async function makeAnalysis(ctx){
+  const {
+    assets, netWorth, liabAed, stocksAed, cashAed, efAed, propAed,
+    retPct, divPct, horizon, series
+  } = ctx;
+
+  const liquid = cashAed + efAed + stocksAed;
+  const liquidShare = assets ? (liquid/assets) : 0;
+  const propShare = assets ? (propAed/assets) : 0;
+  let text = `Snapshot:
+- Net worth: ${fmt(netWorth)} AED (liabilities ${fmt(liabAed)} AED)
+- Liquidity: ${fmt(liquid)} AED (${(liquidShare*100).toFixed(0)}%), Properties: ${fmt(propAed)} AED (${(propShare*100).toFixed(0)}%)
+- Stocks now: ${fmt(stocksAed)} AED; Cash+EF: ${fmt(cashAed+efAed)} AED.
+
+Projection (${horizon}y @ ${(retPct*100).toFixed(1)}%/yr, dividends ${(divPct*100).toFixed(1)}%):
+- Ending stocks ≈ ${fmt(series[series.length-1].stock)} AED
+- Ending net worth ≈ ${fmt(series[series.length-1].net)} AED
+- Last-year dividends ≈ ${fmt(series[series.length-1].divs)} AED/yr.
+
+Strengths:
+• Excellent emergency buffer; manageable debt.
+• Consistent contributions (monthly AED + semiannual USD) drive compounding.
+• Geographic diversification (AED/USD/PKR).
+
+Risks:
+• High property concentration can limit flexibility and add FX/market risk.
+• If loan rates > portfolio return, accelerate payoff on higher-rate debts.
+
+Moves to consider:
+• Keep USD exposures for global diversification.
+• Periodically rebalance so property ≤ ~50–60% of total.
+• Revisit rates and contributions annually; compound wins come from consistency.`;
+
+  // If user provided API key, call OpenAI for a richer analysis
+  const key = $("#apiKey").value.trim();
+  if(key){
+    try{
+      $("#analysis").value = "Contacting ChatGPT for analysis...";
+      const body = {
+        model: "gpt-4o-mini",
+        messages: [
+          {role:"system", content:"You are a concise, practical financial planning assistant. Write in bullet points with short sentences."},
+          {role:"user", content: `Analyze this net worth and plan. Use AED as currency. Be specific and pragmatic.
+Net worth: ${netWorth} AED. Liabilities: ${liabAed} AED.
+Liquid: ${liquid} AED. Properties: ${propAed} AED.
+Assumptions: return ${(retPct*100).toFixed(1)}%/yr, dividend ${(divPct*100).toFixed(1)}%.
+Projection ${horizon} years. Last year net worth ${series[series.length-1].net} AED; stocks ${series[series.length-1].stock} AED; dividends ${series[series.length-1].divs} AED.
+Give: 1) What’s great, 2) Watch-outs, 3) 3–5 concrete next actions, 4) A one-line mantra.`}
+        ]
+      };
+      const res = await fetch("https://api.openai.com/v1/chat/completions",{
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+key },
+        body: JSON.stringify(body)
+      });
+      if(!res.ok) throw new Error("API error "+res.status);
+      const data = await res.json();
+      const out = data.choices?.[0]?.message?.content?.trim();
+      $("#analysis").value = out || text;
+      return;
+    }catch(e){
+      $("#analysis").value = text + `\n\n(Note: AI call failed — using local analysis. Error: ${e.message})`;
+      return;
+    }
+  }
+
+  $("#analysis").value = text;
+}
+
+/* ---------- Events ---------- */
+$("#addProp").onclick = ()=>{ $("#propList").appendChild(makePropRow()); saveState(); };
+$("#calcBtn").onclick = calcAll;
+$("#resetBtn").onclick = ()=>{ localStorage.removeItem("nw_state_v2"); location.reload(); };
+["input","change"].forEach(ev=>{
+  document.body.addEventListener(ev, e=>{
+    if(["INPUT","SELECT","TEXTAREA"].includes(e.target.tagName) && e.target.id!=="apiKey"){
+      $("#saveBadge").textContent = "saving…"; 
+      clearTimeout(window.__saveT); window.__saveT=setTimeout(saveState, 250);
+    }
+  });
+});
+
+/* ---------- Boot ---------- */
+(function init(){
+  setHorizonOptions();
+  loadState();
+  calcAll();
+})();
+</script>
+</body>
+</html>
