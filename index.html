@@ -62,6 +62,7 @@
 
   #toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:8px 12px;border-radius:10px;box-shadow:0 8px 20px #0002;opacity:0;pointer-events:none;transition:.25s}
   #toast.show{opacity:1}
+canvas.chart { min-height: 260px; }
 
   @media (max-width:900px){
     .kpis--results,.kpis--ret{grid-template-columns:1fr 1fr}
@@ -347,21 +348,63 @@ function drawLine(canvas, labels, series){
 // Pie
 function drawPie(canvas, slices, colors, labels, legendEl){
   const ctx = canvas.getContext("2d");
-  const w = canvas.width = canvas.clientWidth, h = canvas.height = canvas.clientHeight;
-  ctx.clearRect(0,0,w,h); ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h);
-  const total = slices.reduce((a,b)=>a+b,0);
-  if(total<=0){ ctx.fillStyle="#66789b"; ctx.font="12px system-ui"; ctx.fillText("No data", 12, 20); legendEl.innerHTML=""; return; }
-  let start = -Math.PI/2;
-  const cx = w/2, cy = h/2, r = Math.min(w,h)/2 - 20;
-  slices.forEach((val,i)=>{
-    const ang = (val/total) * Math.PI*2;
-    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+ang); ctx.closePath();
-    ctx.fillStyle = colors[i % colors.length]; ctx.fill();
+
+  // Make sure we have a sensible drawing area even if the element is narrow/hidden
+  const w = Math.max(120, canvas.clientWidth || canvas.width || 300);
+  const h = Math.max(120, canvas.clientHeight || canvas.height || 300);
+  canvas.width = w; 
+  canvas.height = h;
+
+  // Clean values (no negatives/NaN)
+  const vals = (slices || []).map(v => Math.max(0, Number(v) || 0));
+  const total = vals.reduce((a,b)=>a+b, 0);
+
+  // Clear background
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0,0,w,h);
+
+  if (total <= 0) {
+    ctx.fillStyle = "#66789b";
+    ctx.font = "12px system-ui";
+    ctx.fillText("No data", 12, 20);
+    if (legendEl) legendEl.innerHTML = "";
+    return;
+  }
+
+  // Safe radius (never negative)
+  const pad = 20;
+  const r = Math.max(12, Math.min(w, h) / 2 - pad);
+  if (!isFinite(r) || r <= 12) {
+    ctx.fillStyle = "#66789b";
+    ctx.font = "12px system-ui";
+    ctx.fillText("Not enough space", 12, 20);
+    if (legendEl) legendEl.innerHTML = "";
+    return;
+  }
+
+  // Draw
+  let start = -Math.PI / 2;
+  const cx = w / 2, cy = h / 2;
+  vals.forEach((val, i) => {
+    const ang = (val / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, start + ang);
+    ctx.closePath();
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fill();
     start += ang;
   });
+
   // Legend
-  legendEl.innerHTML = labels.map((l,i)=>`<span><span class="dot" style="background:${colors[i%colors.length]}"></span>${l}: <strong>${fmt(slices[i])}</strong> AED</span>`).join(" ");
+  if (legendEl) {
+    legendEl.innerHTML = labels.map((l,i)=>
+      `<span><span class="dot" style="background:${colors[i%colors.length]}"></span>${l}: <strong>${vals[i].toLocaleString()}</strong> AED</span>`
+    ).join(" ");
+  }
 }
+
 
 /* =================== PROJECTION =================== */
 function computeProjectionFromSTATE() {
