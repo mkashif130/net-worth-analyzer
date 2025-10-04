@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AED Net Worth Planner — Wizard (Light)</title>
+<title>AED Net Worth Planner — Wizard (Light, Fixed)</title>
 <style>
   :root{
     --bg:#f7f9fc; --card:#ffffff; --ink:#0f172a; --muted:#5b6b88; --line:#e5e9f2; --accent:#2b6cff;
-    --ok:#27a36a; --warn:#d4a018; --bad:#e05252; --chip:#eef3ff;
+    --ok:#27a36a; --warn:#d4a018; --bad:#e05252;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial}
-  h1,h2,h3{margin:0 0 .5rem} h1{font-size:1.32rem} h2{font-size:1.08rem} h3{font-size:.96rem;color:var(--muted)}
+  h1,h2,h3{margin:0 0 .5rem} h1{font-size:1.28rem} h2{font-size:1.05rem} h3{font-size:.95rem;color:var(--muted)}
   .wrap{max-width:860px;margin:28px auto;padding:0 16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 6px 24px #0b1a3320}
   .row{display:flex;gap:12px;flex-wrap:wrap} .row>div{flex:1 1 240px;min-width:220px}
@@ -20,10 +20,6 @@
   input:focus,select:focus{border-color:#8fb0ff;box-shadow:0 0 0 3px #2b6cff22}
   button{cursor:pointer;background:linear-gradient(180deg,#2b6cff,#2158d1);border:1px solid #1e4fc0;color:#fff}
   button.ghost{background:#f2f6ff;border-color:#d7e5ff;color:#1b3b8d}
-  button.linkish{background:transparent;border:1px solid #d5deef;color:#3856a6}
-  .small{font-size:.84rem} .muted{color:var(--muted)}
-  .pill{display:inline-flex;gap:8px;align-items:center;background:var(--chip);border:1px solid #d8e3ff;color:#1a3a8f;padding:6px 10px;border-radius:999px}
-  .footerBtns{display:flex;justify-content:space-between;gap:10px;margin-top:14px}
   .progress{height:8px;background:#edf2ff;border-radius:999px;overflow:hidden;margin:10px 0 16px;border:1px solid #dfe7fb}
   .bar{height:100%;background:#2b6cff;width:0%;transition:width .25s ease}
   .hide{display:none}
@@ -36,57 +32,60 @@
   canvas{background:#fff;border:1px solid #e7edf7;border-radius:12px}
   .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
   .tip{background:#f6fbff;border:1px solid #e2f1ff;border-radius:10px;padding:8px;color:#31507f}
+  /* tiny toast */
+  #toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:8px 12px;border-radius:10px;box-shadow:0 8px 20px #0002;opacity:0;pointer-events:none;transition:.25s}
+  #toast.show{opacity:1}
 </style>
 </head>
 <body>
+<div id="toast">Calculating…</div>
 <div class="wrap">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
     <h1>AED Net Worth & Retirement Planner</h1>
-    <span class="pill small">Step-by-step • Single file • AED-only</span>
+    <span style="background:#eef3ff;border:1px solid #d8e3ff;color:#1a3a8f;padding:6px 10px;border-radius:999px;font-size:.84rem">Step-by-step • AED-only</span>
   </div>
   <div class="progress"><div class="bar" id="bar"></div></div>
 
-  <!-- STEP 1: ASSETS -->
+  <!-- STEP 1 -->
   <section class="card step" data-step="1">
     <h2>Step 1 — Assets (AED)</h2>
-    <p class="tip small">Add rough amounts—precision isn’t required. You can edit later.</p>
+    <p class="tip">Enter what you own. You can refine later.</p>
     <div class="row" style="margin-top:6px">
-      <div><label>Stocks / ETFs</label><input id="stocks" type="number" step="1" placeholder="e.g., 124780"></div>
-      <div><label>Cash</label><input id="cash" type="number" step="1" placeholder="e.g., 10000"></div>
-      <div><label>Emergency Fund</label><input id="ef" type="number" step="1" placeholder="e.g., 300000"></div>
+      <div><label>Stocks / ETFs</label><input id="stocks" type="number" step="1" placeholder="124780"></div>
+      <div><label>Cash</label><input id="cash" type="number" step="1" placeholder="10000"></div>
+      <div><label>Emergency Fund</label><input id="ef" type="number" step="1" placeholder="300000"></div>
     </div>
     <h3 style="margin-top:8px">Properties (AED)</h3>
     <div id="propList"></div>
     <div class="row" style="margin-top:6px">
-      <div style="flex:0 0 auto"><button id="addProp" type="button" class="linkish">+ Add Property</button></div>
+      <div style="flex:0 0 auto"><button id="addProp" type="button" class="ghost">+ Add Property</button></div>
     </div>
-    <div class="footerBtns">
-      <button class="ghost" type="button" disabled>Back</button>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
       <button id="next1" type="button">Next</button>
     </div>
   </section>
 
-  <!-- STEP 2: LIABILITIES -->
+  <!-- STEP 2 -->
   <section class="card step hide" data-step="2">
     <h2>Step 2 — Liabilities (AED)</h2>
-    <p class="tip small">We’ll assume a straight-line payoff across the years you choose.</p>
+    <p class="tip">We’ll model a straight-line payoff.</p>
     <div class="row">
-      <div><label>Total Liabilities</label><input id="liab" type="number" step="1" placeholder="e.g., 172000"></div>
-      <div><label>Years to Pay Off (linear)</label><input id="liabYears" type="number" step="1" value="4"></div>
+      <div><label>Total Liabilities</label><input id="liab" type="number" step="1" placeholder="172000"></div>
+      <div><label>Years to Pay Off</label><input id="liabYears" type="number" step="1" value="4"></div>
     </div>
-    <div class="footerBtns">
+    <div style="display:flex;justify-content:space-between;margin-top:12px">
       <button class="ghost" type="button" data-back>Back</button>
       <button id="next2" type="button">Next</button>
     </div>
   </section>
 
-  <!-- STEP 3: PROJECTION -->
+  <!-- STEP 3 -->
   <section class="card step hide" data-step="3">
-    <h2>Step 3 — Projection Settings</h2>
-    <p class="tip small">How you’ll invest going forward.</p>
+    <h2>Step 3 — Projection</h2>
+    <p class="tip">How you’ll invest going forward.</p>
     <div class="row">
-      <div><label>Monthly Investment (AED)</label><input id="monthly" type="number" step="1" value="5000"></div>
-      <div><label>Semiannual Investment (AED)</label><input id="semi" type="number" step="1" value="95420"></div>
+      <div><label>Monthly Investment</label><input id="monthly" type="number" step="1" value="5000"></div>
+      <div><label>Semiannual Investment</label><input id="semi" type="number" step="1" value="95420"></div>
       <div><label>Semiannual Investments Until (Year)</label><input id="semiUntil" type="number" step="1" value="2028"></div>
     </div>
     <div class="row">
@@ -97,18 +96,18 @@
         <select id="horizon"></select>
       </div>
     </div>
-    <div class="footerBtns">
+    <div style="display:flex;justify-content:space-between;margin-top:12px">
       <button class="ghost" type="button" data-back>Back</button>
       <button id="next3" type="button">Next</button>
     </div>
   </section>
 
-  <!-- STEP 4: RETIREMENT -->
+  <!-- STEP 4 -->
   <section class="card step hide" data-step="4">
-    <h2>Step 4 — Retirement Preferences</h2>
-    <p class="tip small">Check if you’re on track vs. your annual spending target.</p>
+    <h2>Step 4 — Retirement</h2>
+    <p class="tip">See if you’re on track vs. your yearly target.</p>
     <div class="row">
-      <div><label>Target Yearly Spend (AED)</label><input id="retSpend" type="number" step="1" placeholder="e.g., 240000"></div>
+      <div><label>Target Yearly Spend</label><input id="retSpend" type="number" step="1" placeholder="240000"></div>
       <div><label>Safe Withdrawal Rate (%)</label><input id="swr" type="number" step="0.1" value="4"></div>
       <div>
         <label>Include Property for Withdrawals?</label>
@@ -119,13 +118,14 @@
         </select>
       </div>
     </div>
-    <div class="footerBtns">
+    <div style="display:flex;justify-content:space-between;margin-top:12px">
       <button class="ghost" type="button" data-back>Back</button>
-      <button id="calc" type="button">Calculate</button>
+      <!-- Redundant onclick + JS listener -->
+      <button id="calc" type="button" onclick="calculate()">Calculate</button>
     </div>
   </section>
 
-  <!-- STEP 5: RESULTS -->
+  <!-- RESULTS -->
   <section class="card hide" id="results">
     <h2>Results</h2>
     <div class="kpis" style="margin-top:10px">
@@ -148,7 +148,7 @@
     <h3 style="margin-top:14px">Retirement Snapshot</h3>
     <div id="retirement"></div>
 
-    <div class="footerBtns" style="margin-top:16px">
+    <div style="display:flex;justify-content:space-between;margin-top:16px">
       <button class="ghost" type="button" id="editAgain">← Edit inputs</button>
       <button class="ghost" type="button" id="reset">Reset</button>
     </div>
@@ -156,233 +156,200 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const $ = s => document.querySelector(s);
-  const $$ = s => Array.from(document.querySelectorAll(s));
-  const fmt = n => (n===null||isNaN(n)) ? "–" : n.toLocaleString(undefined,{maximumFractionDigits:0});
-  const YEAR0 = (new Date()).getFullYear();
+/* ===== Minimal helpers (global on purpose for onclick fallback) ===== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const fmt = n => (n===null||isNaN(n)) ? "–" : n.toLocaleString(undefined,{maximumFractionDigits:0});
+const YEAR0 = (new Date()).getFullYear();
 
-  // Progress / steps
-  const steps = $$(".step");
-  let cur = 1;
-  const setProgress = () => { $("#bar").style.width = ((cur-1)/(steps.length))*100 + "%"; };
-  const showStep = n => {
-    cur = n;
-    steps.forEach(s => s.classList.toggle("hide", parseInt(s.dataset.step,10)!==n));
-    $("#results")?.classList.add("hide");
-    setProgress();
-  };
+/* Progress & steps */
+const steps = []; // filled on DOMContentLoaded
+let cur = 1;
+function setProgress(){ $("#bar").style.width = ((cur-1)/(steps.length))*100 + "%"; }
+function showStep(n){
+  cur = n;
+  steps.forEach(s => s.classList.toggle("hide", parseInt(s.dataset.step,10)!==n));
+  $("#results")?.classList.add("hide");
+  setProgress();
+}
 
-  // Horizon options
-  const setHorizonOptions = () => {
-    const sel=$("#horizon"); sel.innerHTML="";
-    for(let y=5;y<=80;y+=5){ const o=document.createElement("option");
-      o.value=String(y); o.textContent=`${y} years`; sel.appendChild(o); }
-  };
-  setHorizonOptions();
+/* Toast */
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 900);
+}
 
-  // Properties UI
-  const propList = $("#propList");
-  const propRow = (v=0) => {
-    const wrap = document.createElement("div");
-    wrap.className = "row"; wrap.style.marginTop = "6px";
-    wrap.innerHTML = `
-      <div><input type="number" step="1" placeholder="e.g., 666667" value="${v||""}"></div>
-      <div style="flex:0 0 auto"><button type="button" class="ghost del">✕</button></div>`;
-    wrap.querySelector(".del").addEventListener("click", ()=>{ wrap.remove(); save(); });
-    wrap.querySelector("input").addEventListener("input", save);
-    return wrap;
-  };
-  $("#addProp").addEventListener("click", ()=>{ propList.appendChild(propRow(0)); save(); });
+/* Chart */
+function drawChart(canvas, labels, series){
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width = canvas.clientWidth;
+  const h = canvas.height = canvas.clientHeight;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h);
+  const padL=44,padR=10,padT=10,padB=22;
+  const iw=w-padL-padR, ih=h-padT-padB;
 
-  // Autosave
-  const save = () => {
-    const s = {
-      stocks:+($("#stocks").value||0), cash:+($("#cash").value||0), ef:+($("#ef").value||0),
-      liab:+($("#liab").value||0), liabYears:+($("#liabYears").value||4),
-      monthly:+($("#monthly").value||0), semi:+($("#semi").value||0), semiUntil:+($("#semiUntil").value||YEAR0+3),
-      retPct:+($("#retPct").value||8), divPct:+($("#divPct").value||3),
-      horizon:+($("#horizon").value||5), retSpend:+($("#retSpend").value||0),
-      swr:+($("#swr").value||4), includeProp:$("#includeProp").value,
-      props: $$("#propList .row input").map(i=>+(i.value||0))
-    };
-    localStorage.setItem("wizard_aed_v2", JSON.stringify(s));
-  };
-  const load = () => {
-    const s = JSON.parse(localStorage.getItem("wizard_aed_v2")||"null");
-    if(!s){
-      $("#stocks").value=124780; $("#cash").value=10000; $("#ef").value=300000;
-      $("#liab").value=172000; $("#liabYears").value=4;
-      $("#monthly").value=5000; $("#semi").value=95420; $("#semiUntil").value=2028;
-      $("#retPct").value=8; $("#divPct").value=3; $("#horizon").value=5;
-      $("#retSpend").value=240000; $("#swr").value=4; $("#includeProp").value="no";
-      [666667,400000,173333,40000].forEach(v=> propList.appendChild(propRow(v)));
-      return;
-    }
-    $("#stocks").value=s.stocks||0; $("#cash").value=s.cash||0; $("#ef").value=s.ef||0;
-    $("#liab").value=s.liab||0; $("#liabYears").value=s.liabYears||4;
-    $("#monthly").value=s.monthly||0; $("#semi").value=s.semi||0; $("#semiUntil").value=s.semiUntil||YEAR0+3;
-    $("#retPct").value=s.retPct||8; $("#divPct").value=s.divPct||3; $("#horizon").value=String(s.horizon||5);
-    $("#retSpend").value=s.retSpend||0; $("#swr").value=s.swr||4; $("#includeProp").value=s.includeProp||"no";
-    (s.props&&s.props.length?s.props:[]).forEach(v=> propList.appendChild(propRow(v)));
-  };
-  ["input","change"].forEach(ev=>{
-    document.body.addEventListener(ev, e=>{
-      if(["INPUT","SELECT"].includes(e.target.tagName)) save();
-    });
+  const min=Math.min(...series), max=Math.max(...series);
+  const lo=min*0.95, hi=max*1.05;
+  const sx=i=> padL + (i/(series.length-1))*iw;
+  const sy=v=> padT + ih - ((v-lo)/(hi-lo))*ih;
+
+  // grid
+  ctx.strokeStyle="#e6ecf7"; ctx.lineWidth=1; ctx.beginPath();
+  for(let i=0;i<=4;i++){ const y=padT+(i/4)*ih; ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); }
+  ctx.stroke();
+
+  // y labels
+  ctx.fillStyle="#66789b"; ctx.font="11px system-ui";
+  for(let i=0;i<=4;i++){ const val=lo+(i/4)*(hi-lo); ctx.fillText(fmt(Math.round(val)), 6, padT+(1-i/4)*ih+4); }
+
+  // x labels
+  const step = Math.max(1, Math.floor(labels.length/6));
+  labels.forEach((lab,i)=>{ if(i%step===0 || i===labels.length-1){ ctx.fillText(lab, sx(i)-8, h-6); } });
+
+  // line
+  ctx.strokeStyle="#2b6cff"; ctx.lineWidth=2; ctx.beginPath();
+  series.forEach((v,i)=>{ const x=sx(i), y=sy(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  ctx.stroke();
+  ctx.fillStyle="#2b6cff";
+  series.forEach((v,i)=>{ const x=sx(i), y=sy(v); ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill(); });
+}
+
+/* === Calculation (global so onclick works even if listeners fail) === */
+function calculate(){
+  toast("Calculating…");
+
+  const stocks = +($("#stocks").value||0);
+  const cash   = +($("#cash").value||0);
+  const ef     = +($("#ef").value||0);
+  const props  = $$("#propList input").reduce((s,i)=> s + (+i.value||0), 0);
+
+  const liab0     = +($("#liab").value||0);
+  const liabYears = Math.max(0, +($("#liabYears").value||0));
+
+  const monthly   = +($("#monthly").value||0);
+  const semi      = +($("#semi").value||0);
+  const semiUntil = +($("#semiUntil").value||YEAR0+3);
+
+  const ret = (+($("#retPct").value||0))/100;
+  const div = (+($("#divPct").value||0))/100;
+  const horizon = parseInt($("#horizon").value,10);
+
+  const assetsNow = stocks + cash + ef + props;
+  const netNow = assetsNow - liab0;
+
+  // projection
+  let st=stocks, pr=props, cs=cash+ef, li=liab0;
+  const liSteps = liabYears ? Math.min(liabYears, horizon) : 0;
+  const liDrop = liSteps ? (li/liSteps) : 0;
+
+  const rows=[], labels=[], netSeries=[];
+  for(let i=1;i<=horizon;i++){
+    const y = YEAR0 + i - 1;
+    const add = (y<=semiUntil ? 2*semi : 0) + monthly*12;
+    st += add;
+
+    const dividends = st * div;   // before growth
+    st *= (1 + ret);              // growth
+
+    if(i<=liSteps){ li = Math.max(0, li - liDrop); } else { li = 0; }
+
+    const totalAssets = st + pr + cs;
+    const nw = totalAssets - li;
+
+    rows.push({y, st:Math.round(st), divs:Math.round(dividends), pr:Math.round(pr), cs:Math.round(cs), li:Math.round(li), nw:Math.round(nw)});
+    labels.push(String(y)); netSeries.push(nw);
+  }
+
+  // KPIs
+  $("#assetsAED").textContent = fmt(assetsNow) + " AED";
+  $("#liabOut").textContent   = fmt(liab0) + " AED";
+  $("#nwAED").textContent     = fmt(netNow) + " AED";
+  $("#hzOut").textContent     = horizon + "y";
+
+  // Table (reverse for quick takeaway)
+  const tb=$("#projTable tbody"); tb.innerHTML="";
+  rows.slice().reverse().forEach(r=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML = `<td>${r.y}</td><td>${fmt(r.st)}</td><td>${fmt(r.divs)}</td><td>${fmt(r.pr)}</td><td>${fmt(r.cs)}</td><td>${fmt(r.li)}</td><td><strong>${fmt(r.nw)}</strong></td>`;
+    tb.appendChild(tr);
   });
 
-  // Chart (no libs)
-  function drawChart(canvas, labels, series){
-    const ctx = canvas.getContext("2d");
-    const w = canvas.width = canvas.clientWidth;
-    const h = canvas.height = canvas.clientHeight;
-    ctx.clearRect(0,0,w,h);
-    ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h);
-    const padL=44,padR=10,padT=10,padB=22;
-    const iw=w-padL-padR, ih=h-padT-padB;
+  drawChart($("#chart"), labels, netSeries);
 
-    const min=Math.min(...series), max=Math.max(...series);
-    const lo=min*0.95, hi=max*1.05;
-    const sx=i=> padL + (i/(series.length-1))*iw;
-    const sy=v=> padT + ih - ((v-lo)/(hi-lo))*ih;
+  // Retirement
+  const spend=+($("#retSpend").value||0), swr=(+($("#swr").value||4))/100;
+  const mode=$("#includeProp").value;
+  let propFactor=0; if(mode==="half") propFactor=.5; if(mode==="yes") propFactor=1;
+  const projectedNet = rows.at(-1)?.nw ?? netNow;
+  const withdrawalBase = projectedNet - pr + pr*propFactor;
+  const swrIncome = withdrawalBase * swr;
+  const divIncome = withdrawalBase * 0.35 * ((+($("#divPct").value||3))/100);
+  const ok = (swrIncome + divIncome) >= spend;
+  const cls = ok ? "ok" : ((swrIncome+divIncome)>0.8*spend ? "warn" : "bad");
+  const txt = ok ? "On track ✅" : ((swrIncome+divIncome)>0.8*spend ? "Close — needs tweaks ⚠️" : "Shortfall ⛔");
 
-    // grid
-    ctx.strokeStyle="#e6ecf7"; ctx.lineWidth=1; ctx.beginPath();
-    for(let i=0;i<=4;i++){ const y=padT+(i/4)*ih; ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); }
-    ctx.stroke();
+  $("#retirement").innerHTML = `
+    <div class="kpis" style="margin-top:8px">
+      <div class="stat"><span class="muted">Projected Net @ Horizon</span><strong>${fmt(projectedNet)} AED</strong></div>
+      <div class="stat"><span class="muted">Withdrawal Base</span><strong>${fmt(Math.round(withdrawalBase))} AED</strong></div>
+      <div class="stat"><span class="muted">SWR Income</span><strong>${fmt(Math.round(swrIncome))} AED/yr</strong></div>
+      <div class="stat"><span class="muted">Est. Dividends</span><strong>${fmt(Math.round(divIncome))} AED/yr</strong></div>
+    </div>
+    <p class="small muted" style="margin-top:8px">Target spend: <strong>${fmt(spend)} AED/yr</strong> — <span class="${cls}"><strong>${txt}</strong></span></p>
+  `;
 
-    // y labels
-    ctx.fillStyle="#66789b"; ctx.font="11px system-ui";
-    for(let i=0;i<=4;i++){ const val=lo+(i/4)*(hi-lo); ctx.fillText(fmt(Math.round(val)), 6, padT+(1-i/4)*ih+4); }
+  // Reveal results & progress bar
+  $("#results").classList.remove("hide");
+  showStep(steps.length); // move progress to end
+  $("#results").scrollIntoView({behavior:"smooth", block:"start"});
+}
 
-    // x labels (sparse)
-    const step = Math.max(1, Math.floor(labels.length/6));
-    labels.forEach((lab,i)=>{ if(i%step===0 || i===labels.length-1){ ctx.fillText(lab, sx(i)-8, h-6); } });
+/* Boot */
+document.addEventListener("DOMContentLoaded", () => {
+  // cache steps
+  Array.from(document.querySelectorAll(".step")).forEach(s=>steps.push(s));
 
-    // line
-    ctx.strokeStyle="#2b6cff"; ctx.lineWidth=2; ctx.beginPath();
-    series.forEach((v,i)=>{ const x=sx(i), y=sy(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
-    ctx.stroke();
-    ctx.fillStyle="#2b6cff";
-    series.forEach((v,i)=>{ const x=sx(i), y=sy(v); ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill(); });
+  // horizon options
+  const sel=$("#horizon"); for(let y=5;y<=80;y+=5){ const o=document.createElement("option"); o.value=String(y); o.textContent=`${y} years`; sel.appendChild(o); }
+
+  // defaults
+  $("#stocks").value=124780; $("#cash").value=10000; $("#ef").value=300000;
+  $("#liab").value=172000; $("#liabYears").value=4;
+  $("#monthly").value=5000; $("#semi").value=95420; $("#semiUntil").value=2028;
+  $("#retPct").value=8; $("#divPct").value=3; $("#horizon").value=5;
+  $("#retSpend").value=240000; $("#swr").value=4; $("#includeProp").value="no";
+
+  // properties
+  const propList=$("#propList");
+  function propRow(v=0){
+    const wrap = document.createElement("div");
+    wrap.className="row"; wrap.style.marginTop="6px";
+    wrap.innerHTML = `<div><input type="number" step="1" placeholder="e.g., 666667" value="${v||""}"></div>
+                      <div style="flex:0 0 auto"><button type="button" class="ghost del">✕</button></div>`;
+    wrap.querySelector(".del").addEventListener("click", ()=> wrap.remove());
+    return wrap;
   }
+  [666667,400000,173333,40000].forEach(v=> propList.appendChild(propRow(v)));
+  $("#addProp").addEventListener("click", ()=> propList.appendChild(propRow(0)));
 
-  // Calculation & retirement
-  function calculate(){
-    try{
-      const stocks=+($("#stocks").value||0), cash=+($("#cash").value||0), ef=+($("#ef").value||0);
-      const props = $$("#propList .row input").reduce((s,i)=> s + (+i.value||0), 0);
-      const liab0=+($("#liab").value||0), liYears=Math.max(0, +($("#liabYears").value||0));
-      const monthly=+($("#monthly").value||0), semi=+($("#semi").value||0), semiUntil=+($("#semiUntil").value||YEAR0+3);
-      const ret=(+($("#retPct").value||0))/100, div=(+($("#divPct").value||0))/100, horizon=parseInt($("#horizon").value,10);
+  // navigation
+  const backBtns = document.querySelectorAll("[data-back]");
+  backBtns.forEach(b=> b.addEventListener("click", ()=> showStep(cur-1)));
+  $("#next1").addEventListener("click", ()=> showStep(2));
+  $("#next2").addEventListener("click", ()=> showStep(3));
+  $("#next3").addEventListener("click", ()=> showStep(4));
 
-      const assetsNow = stocks + cash + ef + props;
-      const netNow = assetsNow - liab0;
+  // calculate (redundant binding in addition to onclick)
+  const calcBtn = $("#calc");
+  if(calcBtn){ calcBtn.addEventListener("click", calculate); }
 
-      // series
-      let st=stocks, pr=props, cs=cash+ef, li=liab0;
-      const liSteps = liYears ? Math.min(liYears, horizon) : 0;
-      const liDrop = liSteps ? (li/liSteps) : 0;
+  // edit & reset
+  $("#editAgain").addEventListener("click", ()=> showStep(1));
+  $("#reset").addEventListener("click", ()=> location.reload());
 
-      const rows=[], labels=[], netSeries=[];
-      for(let i=1;i<=horizon;i++){
-        const y = YEAR0 + i - 1;
-        const semiAdd = (y<=semiUntil) ? 2*semi : 0;
-        const contrib = semiAdd + monthly*12;
-        st += contrib;
-
-        const dividends = st * div; // before growth
-        st *= (1 + ret);            // growth
-
-        if(i<=liSteps){ li = Math.max(0, li - liDrop); } else { li = 0; }
-
-        const totalAssets = st + pr + cs;
-        const nw = totalAssets - li;
-
-        rows.push({y, st:Math.round(st), divs:Math.round(dividends), pr:Math.round(pr), cs:Math.round(cs), li:Math.round(li), nw:Math.round(nw)});
-        labels.push(String(y)); netSeries.push(nw);
-      }
-
-      // KPIs
-      $("#assetsAED").textContent = fmt(assetsNow) + " AED";
-      $("#liabOut").textContent   = fmt(liab0) + " AED";
-      $("#nwAED").textContent     = fmt(netNow) + " AED";
-      $("#hzOut").textContent     = horizon + "y";
-
-      // Table (reverse for quick takeaway)
-      const tb=$("#projTable tbody"); tb.innerHTML="";
-      rows.slice().reverse().forEach(r=>{
-        const tr=document.createElement("tr");
-        tr.innerHTML = `<td>${r.y}</td><td>${fmt(r.st)}</td><td>${fmt(r.divs)}</td><td>${fmt(r.pr)}</td><td>${fmt(r.cs)}</td><td>${fmt(r.li)}</td><td><strong>${fmt(r.nw)}</strong></td>`;
-        tb.appendChild(tr);
-      });
-
-      drawChart($("#chart"), labels, netSeries);
-
-      // Retirement snapshot
-      const spend=+($("#retSpend").value||0), swr=(+($("#swr").value||4))/100;
-      const mode=$("#includeProp").value;
-      let propFactor=0; if(mode==="half") propFactor=.5; if(mode==="yes") propFactor=1;
-      const projectedNet = rows.at(-1)?.nw ?? netNow;
-      const withdrawalBase = projectedNet - pr + pr*propFactor;
-      const swrIncome = withdrawalBase * swr;
-      const divIncome = withdrawalBase * 0.35 * ((+($("#divPct").value||3))/100);
-      const ok = (swrIncome + divIncome) >= spend;
-      const cls = ok ? "ok" : ((swrIncome+divIncome)>0.8*spend ? "warn" : "bad");
-      const txt = ok ? "On track ✅" : ((swrIncome+divIncome)>0.8*spend ? "Close — needs tweaks ⚠️" : "Shortfall ⛔");
-
-      $("#retirement").innerHTML = `
-        <div class="kpis" style="margin-top:8px">
-          <div class="stat"><span class="muted">Projected Net @ Horizon</span><strong>${fmt(projectedNet)} AED</strong></div>
-          <div class="stat"><span class="muted">Withdrawal Base</span><strong>${fmt(Math.round(withdrawalBase))} AED</strong></div>
-          <div class="stat"><span class="muted">SWR Income</span><strong>${fmt(Math.round(swrIncome))} AED/yr</strong></div>
-          <div class="stat"><span class="muted">Est. Dividends</span><strong>${fmt(Math.round(divIncome))} AED/yr</strong></div>
-        </div>
-        <p class="small muted" style="margin-top:8px">Target spend: <strong>${fmt(spend)} AED/yr</strong> — <span class="${cls}"><strong>${txt}</strong></span></p>
-      `;
-
-      // Reveal results and jump
-      $("#results").classList.remove("hide");
-      showStep(steps.length); // update progress bar
-      $("#results").scrollIntoView({behavior:"smooth", block:"start"});
-
-    }catch(err){
-      console.error("Calculation error:", err);
-      alert("Oops—something went wrong while calculating. Check the console for details.");
-    }
-  }
-
-  // Navigation bindings
-  const bindNav = () => {
-    // Next buttons
-    $("#next1").addEventListener("click", ()=> showStep(2));
-    $("#next2").addEventListener("click", ()=> showStep(3));
-    $("#next3").addEventListener("click", ()=> showStep(4));
-
-    // Back buttons
-    $$(".step [data-back]").forEach(b => b.addEventListener("click", ()=> showStep(cur-1)));
-
-    // Calculate
-    $("#calc").addEventListener("click", calculate);
-
-    // Edit / Reset
-    $("#editAgain").addEventListener("click", ()=> showStep(1));
-    $("#reset").addEventListener("click", ()=>{ localStorage.removeItem("wizard_aed_v2"); location.reload(); });
-
-    // Save on input change
-    ["input","change"].forEach(ev=>{
-      document.body.addEventListener(ev, e=>{
-        if(["INPUT","SELECT"].includes(e.target.tagName)) { save(); }
-      });
-    });
-  };
-
-  // Boot
-  bindNav();
-  load();
-  showStep(1);
-  setProgress();
+  // start
+  showStep(1); setProgress();
 });
 </script>
 </body>
