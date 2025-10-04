@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AED Net Worth Planner — V1.1 (Multi-Loans, Empty Defaults)</title>
+<title>AED Net Worth Planner — V1.2 (Multi-Loans • Clean Layout)</title>
 <style>
   :root{
     --bg:#f7f9fc; --card:#ffffff; --ink:#0f172a; --muted:#5b6b88; --line:#e5e9f2; --accent:#2b6cff;
@@ -23,8 +23,21 @@
   .progress{height:8px;background:#edf2ff;border-radius:999px;overflow:hidden;margin:10px 0 16px;border:1px solid #dfe7fb}
   .bar{height:100%;background:var(--accent);width:0%;transition:width .25s ease}
   .hide{display:none}
-  .groupHead{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
   .mini{font-size:.86rem;color:#6a7b98}
+
+  /* Group headers with inline “Add …” buttons */
+  .groupHead{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:10px;
+    background:#eef3ff; border:1px solid #d8e3ff; padding:10px 12px; border-radius:10px;
+  }
+  .groupHead h3{margin:0}
+  .groupHead>button,#addProp,#addMort,#addCar,#addOther{width:auto!important;padding:8px 12px;align-self:center}
+
+  /* Loan rows = clean 4-col grid */
+  .loanRow{
+    display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:12px; align-items:end; margin-top:8px;
+  }
+  .loanRow .del{width:auto!important;padding:8px 12px;line-height:1}
 
   /* Results layout polish */
   .results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
@@ -43,7 +56,7 @@
   .table th:first-child,.table td:first-child{text-align:left}
   .table thead th{font-weight:600;color:#415274}
   .table tbody tr:nth-child(odd){background:#fafcff}
-  .table .th--emph, .table td:last-child{font-weight:700;color:#1b3b8d}
+  .table .th--emph,.table td:last-child{font-weight:700;color:#1b3b8d}
   canvas{background:#fff;border:1px solid #e7edf7;border-radius:12px}
   .tip{background:#f6fbff;border:1px solid #e2f1ff;border-radius:10px;padding:8px;color:#31507f;margin:8px 0}
   .callout{margin:10px 0 0;padding:10px 12px;border:1px solid #e6efff;background:#f6faff;border-radius:10px;color:#314e84}
@@ -58,7 +71,7 @@
 <div class="wrap">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
     <h1>AED Net Worth & Retirement Planner</h1>
-    <span class="mini">V1.1 • State-driven • AED</span>
+    <span class="mini">V1.2 • State-driven • AED</span>
   </div>
   <div class="progress"><div class="bar" id="bar"></div></div>
 
@@ -71,7 +84,10 @@
       <div><label>Cash</label><input id="cash" type="number" step="1" value="0"></div>
       <div><label>Emergency Fund</label><input id="ef" type="number" step="1" value="0"></div>
     </div>
-    <div class="groupHead"><h3>Properties (AED)</h3><button id="addProp" type="button" class="ghost" style="flex:0 0 auto">+ Add Property</button></div>
+    <div class="groupHead">
+      <h3>Properties (AED)</h3>
+      <button id="addProp" type="button" class="ghost">+ Add Property</button>
+    </div>
     <div id="propList"></div>
     <div style="display:flex;justify-content:flex-end;margin-top:12px"><button id="next1" type="button">Next</button></div>
   </section>
@@ -228,13 +244,11 @@ function hydrateStep1(){
   const list=$("#propList"); list.innerHTML="";
   STATE.props.forEach(v=> list.appendChild(propRow(v)));
 }
-
 function hydrateStep2(){
   renderLoanGroup($("#mortList"), STATE.mort, "mort");
   renderLoanGroup($("#carList"), STATE.car, "car");
   renderLoanGroup($("#otherList"), STATE.other, "other");
 }
-
 function hydrateStep3(){
   fillHorizonOptions($("#horizon"), STATE.horizon);
   $("#monthly").value=STATE.monthly; $("#semi").value=STATE.semi; $("#semiUntil").value=STATE.semiUntil||"";
@@ -285,17 +299,18 @@ function propRow(value=0){
   return wrap;
 }
 function loanRow(item={amt:0, rate:0, years:0}){
-  const row=document.createElement("div"); row.className="row"; row.style.marginTop="6px";
-  row.innerHTML=`
+  const row = document.createElement("div");
+  row.className = "loanRow";
+  row.innerHTML = `
     <div><label>Amount</label><input type="number" step="1" value="${item.amt||""}" placeholder="e.g., 500000"></div>
     <div><label>Rate %</label><input type="number" step="0.1" value="${item.rate||""}" placeholder="e.g., 4.0"></div>
     <div><label>Years Left</label><input type="number" step="1" value="${item.years||""}" placeholder="e.g., 15"></div>
-    <div style="flex:0 0 auto"><label>&nbsp;</label><button class="ghost del" type="button">✕</button></div>`;
+    <div><button class="ghost del" type="button" aria-label="Delete loan">✕</button></div>`;
   return row;
 }
 function renderLoanGroup(container, arr, key){
   container.innerHTML="";
-  if(!Array.isArray(arr) || arr.length===0){ /* show one empty row for convenience */ arr=[{amt:0,rate:0,years:0}]; }
+  if(!Array.isArray(arr) || arr.length===0){ arr=[{amt:0,rate:0,years:0}]; }
   arr.forEach(it=>{
     const r = loanRow(it);
     r.querySelector(".del").addEventListener("click", ()=>{ r.remove(); STATE[key]=grabLoansFrom(container); });
@@ -304,10 +319,10 @@ function renderLoanGroup(container, arr, key){
   });
 }
 function grabLoansFrom(container){
-  const rows = Array.from(container.querySelectorAll(".row"));
+  const rows = Array.from(container.querySelectorAll(".loanRow"));
   return rows.map(r=>{
-    const [amt,rate,years] = Array.from(r.querySelectorAll("input")).map(i=>+(i.value||0));
-    return {amt, rate, years};
+    const [amt, rate, years] = Array.from(r.querySelectorAll("input")).map(i=>+(i.value||0));
+    return { amt, rate, years };
   }).filter(x=>x.amt>0 && x.years>0);
 }
 
@@ -323,7 +338,6 @@ function drawChart(canvas, labels, series){
   ctx.strokeStyle="#e6ecf7"; ctx.lineWidth=1; ctx.beginPath();
   for(let i=0;i<=4;i++){ const y=padT+(i/4)*ih; ctx.moveTo(padL,y); ctx.lineTo(w-padR,y);} ctx.stroke();
   ctx.fillStyle="#66789b"; ctx.font="11px system-ui";
-  for(let i=0;i<=4;i++){ const val=lo+(i/4)*(hi-lo); ctx.fillText(fmt(Math.round(val)), 6, padT+(1-i/4)*ih+4); }
   const step=Math.max(1,Math.floor(labels.length/6));
   labels.forEach((lab,i)=>{ if(i%step===0||i===labels.length-1){ ctx.fillText(lab, sx(i)-10, h-6);} });
   ctx.strokeStyle="#2b6cff"; ctx.lineWidth=2; ctx.beginPath();
@@ -439,8 +453,8 @@ function calculateFromSTATE(){
   // Current KPIs (not horizon-dependent)
   const assetsNow = (STATE.stocks||0) + (STATE.cash||0) + (STATE.ef||0) + (STATE.props||[]).reduce((s,v)=>s+(v||0),0);
 
-  // current total liabilities = sum of current balances (year 0) approximated by year-1 balances from amortization
-  const tmp = computeProjectionFromSTATE(); // gives year-1 balances already; use first li
+  // current total liabilities = approximate as year-1 projected balance
+  const tmp = computeProjectionFromSTATE(); // gives year-1 balances already
   const liab0 = tmp.rows?.[0]?.li || 0;
   const netNow = assetsNow - liab0;
   $("#assetsAED").textContent = fmt(assetsNow);
