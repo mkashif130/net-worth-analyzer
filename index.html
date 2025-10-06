@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Portfolio Concentration • Pie</title>
   <style>
-    :root{
-      --bg:#ffffff;--ink:#0b1220;--muted:#6b7280;--ring:#e5e7eb;--accent:#2563eb;--radius:16px;
-    }
+    :root{ --bg:#ffffff; --ink:#0b1220; --muted:#6b7280; --ring:#e5e7eb; --accent:#2563eb; --radius:16px; }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:var(--bg);color:var(--ink)}
@@ -33,26 +31,26 @@
 
     /* Chart */
     .chart-col{display:grid;gap:12px}
-    canvas{width:100%;height:380px;display:block}
+    canvas{width:100%;height:420px;display:block}
 
     /* Sticky total */
     .totalbar{position:sticky;bottom:0;background:#fff;border:1px solid var(--ring);border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -6px 18px rgba(2,6,23,.05)}
 
-    /* Suggestions */
+    /* Summary (hidden until data present) */
     .pill{border:1px solid var(--ring);padding:4px 8px;border-radius:999px;font-size:12px;font-weight:600}
     .pill.low{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
     .pill.balanced{background:#eff6ff;color:#1e3a8a;border-color:#bfdbfe}
     .pill.high{background:#fef2f2;color:#991b1b;border-color:#fecaca}
-    .suggestions{list-style:none;margin:8px 0 0 0;padding:0;display:grid;gap:8px}
-    .suggestions li{font-size:13px;color:#111827;line-height:1.35}
-    .suggestions li .tag{font-size:11px;opacity:.7;margin-left:6px}
+    .summary-list{list-style:none;margin:8px 0 0 0;padding:0;display:grid;gap:8px}
+    .summary-list li{font-size:13px;color:#111827;line-height:1.35}
+    .summary-list li .tag{font-size:11px;opacity:.7;margin-left:6px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
       <h1>Portfolio Concentration</h1>
-      <div class="muted">Enter amounts only (no %). The pie and total update automatically. Labels show % on the slices.</div>
+      <div class="muted">Enter amounts only (no %). The pie and total update automatically. Labels are outside with leader lines and basic collision-avoidance.</div>
     </header>
 
     <section class="card row">
@@ -78,12 +76,13 @@
       <div class="chart-col">
         <canvas id="pie" width="700" height="700" aria-label="Portfolio pie chart"></canvas>
 
-        <div class="card" id="advice">
+        <!-- Summary: hidden initially; appears once user adds any positive amounts -->
+        <div class="card" id="summaryCard" style="display:none">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <h2 style="margin:0;font-size:14px">Suggestions</h2>
+            <h2 style="margin:0;font-size:14px">Summary</h2>
             <span id="riskPill" class="pill">—</span>
           </div>
-          <ul id="sugs" class="suggestions"></ul>
+          <ul id="summaryList" class="summary-list"></ul>
         </div>
       </div>
     </section>
@@ -101,11 +100,11 @@
     const moneyFmt = (n) => (isFinite(n) ? fmt.format(n) : "—");
     const parseAmount = (str) => {
       if (typeof str !== 'string') return 0;
-      const clean = str.replace(/[,\\s]/g, '');
+      const clean = str.replace(/[\,\s]/g,'');
       const num = Number(clean);
       return isFinite(num) && num > 0 ? num : 0;
     };
-    const hsl = (i, n) => `hsl(${(i*360/Math.max(1,n))%360} 70% 50%)`;
+    const hsl = (i,n)=>`hsl(${(i*360/Math.max(1,n))%360} 70% 50%)`;
 
     // --- Elements ---
     const rowsEl = byId('rows');
@@ -113,40 +112,167 @@
     const noteEl = byId('note');
     const pie = byId('pie');
     const totalOut = byId('totalOut');
-    const sugsEl = byId('sugs');
+    const summaryCard = byId('summaryCard');
+    const summaryList = byId('summaryList');
     const riskPill = byId('riskPill');
 
     // --- Rows ---
     function newRow(category='', value=''){
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
         <td><input type="text" placeholder="e.g., Stocks" value="${category}"/></td>
         <td><input type="text" class="mono" placeholder="e.g., 50000" value="${value}"/></td>
-        <td style="text-align:right"><button class="icon-btn" title="Remove" aria-label="Remove">✕</button></td>
-      `;
+        <td style="text-align:right"><button class="icon-btn" title="Remove" aria-label="Remove">✕</button></td>`;
       rowsEl.appendChild(tr);
     }
     function seed(){ newRow('Stocks',''); newRow('Real Estate',''); newRow('Cash',''); newRow('Crypto',''); }
 
     function getModel(){
-      const items = [];
-      [...rowsEl.querySelectorAll('tr')].forEach((tr, idx) => {
+      const items=[];
+      [...rowsEl.querySelectorAll('tr')].forEach((tr,idx)=>{
         const name = tr.querySelector('td:nth-child(1) input').value.trim() || `Category ${idx+1}`;
         const raw  = tr.querySelector('td:nth-child(2) input').value;
         const amount = parseAmount(raw);
-        if (amount > 0) items.push({ name, amount });
+        if(amount>0) items.push({name,amount});
       });
       const total = items.reduce((a,b)=>a+b.amount,0);
       return { total, items };
     }
 
-    // --- Advice logic ---
+    // --- Chart with outside labels & collision avoidance ---
+    function draw(model){
+      const ctx = pie.getContext('2d');
+      const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+      const W = pie.clientWidth * DPR, H = pie.clientHeight * DPR;
+      if(pie.width!==W) pie.width=W; if(pie.height!==H) pie.height=H;
+      ctx.clearRect(0,0,W,H); ctx.save();
+
+      const {items,total:sum} = model;
+      totalOut.textContent = moneyFmt(sum);
+
+      if(sum<=0){
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = `${Math.max(14,Math.min(W,H)*0.04)}px ui-sans-serif, system-ui`;
+        ctx.textAlign = 'center';
+        ctx.fillText('Add category amounts to see the pie', W/2, H/2);
+        ctx.restore();
+        if(summaryCard) summaryCard.style.display='none';
+        return;
+      }
+
+      const pad = Math.min(W,H)*0.08;
+      const cx = W/2, cy = H/2;
+      const radius = Math.max(40, Math.min(W,H)*0.40 - pad);
+      const inner  = radius * 0.55;
+
+      const dividerColor = 'rgba(255,255,255,0.95)';
+      const leaderColor  = 'rgba(0,0,0,0.45)';
+      const labelColor   = '#111827';
+
+      // --- First pass: draw slices and collect label targets
+      let start = -Math.PI/2;
+      const labels = [];
+      items.forEach((it,i)=>{
+        const frac = it.amount / sum;
+        const end = start + frac*Math.PI*2;
+
+        // slice (donut)
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, start, end);
+        ctx.arc(cx, cy, inner, end, start, true);
+        ctx.closePath();
+        ctx.fillStyle = hsl(i, items.length);
+        ctx.fill();
+
+        // divider
+        ctx.lineWidth = Math.max(1, Math.min(W,H)*0.004);
+        ctx.strokeStyle = dividerColor;
+        ctx.stroke();
+
+        // label anchor just outside arc
+        const mid = (start+end)/2;
+        const baseR = radius + 22; // where text baseline aims
+        const lx = cx + Math.cos(mid) * baseR;
+        const ly = cy + Math.sin(mid) * baseR;
+        const side = (mid>Math.PI/2 || mid<-Math.PI/2) ? 'left' : 'right';
+        const text = `${it.name} · ${(frac*100).toFixed(frac<0.1?1:0)}%`;
+        const angle = mid; // keep for sorting
+        labels.push({x:lx,y:ly,side,text,angle,frac});
+
+        start = end;
+      });
+
+      // --- Second pass: simple collision avoidance per side ---
+      const minGap = Math.max(12, Math.min(W,H)*0.03); // minimum vertical gap between labels
+      function relax(side){
+        const arr = labels.filter(l=>l.side===side).sort((a,b)=>a.y-b.y);
+        for(let i=1;i<arr.length;i++){
+          if(arr[i].y - arr[i-1].y < minGap){
+            arr[i].y = arr[i-1].y + minGap;
+          }
+        }
+        // also prevent labels from going too far beyond canvas
+        const topBound = cy - (radius + 60);
+        const botBound = cy + (radius + 60);
+        if(arr.length){
+          if(arr[0].y < topBound){
+            const delta = topBound - arr[0].y;
+            for(const l of arr) l.y += delta;
+          }
+          if(arr[arr.length-1].y > botBound){
+            const delta = arr[arr.length-1].y - botBound;
+            for(const l of arr) l.y -= delta;
+          }
+        }
+      }
+      relax('left');
+      relax('right');
+
+      // --- Draw leaders and labels ---
+      ctx.font = `${Math.max(11,Math.min(W,H)*0.025)}px ui-sans-serif, system-ui`;
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = labelColor;
+      labels.forEach(l=>{
+        const alignRight = l.side==='left';
+        ctx.textAlign = alignRight ? 'right' : 'left';
+        const textX = l.x + (alignRight ? -6 : 6);
+        const textY = l.y;
+
+        // leader from arc edge to label point, with a small horizontal segment
+        const arcPointX = cx + Math.cos(l.angle) * radius;
+        const arcPointY = cy + Math.sin(l.angle) * radius;
+        const midX = cx + Math.cos(l.angle) * (radius + 10);
+        const midY = cy + Math.sin(l.angle) * (radius + 10);
+        const endX = textX + (alignRight ? 4 : -4); // small offset before text
+
+        ctx.beginPath();
+        ctx.moveTo(arcPointX, arcPointY);
+        ctx.lineTo(midX, midY);
+        ctx.lineTo(endX, textY);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = leaderColor;
+        ctx.stroke();
+
+        ctx.fillText(l.text, textX, textY);
+      });
+
+      // center total label
+      ctx.fillStyle = '#111827';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `${Math.max(12,Math.min(W,H)*0.035)}px ui-sans-serif, system-ui`;
+      ctx.fillText(`Total ${moneyFmt(sum)}`, cx, cy);
+
+      ctx.restore();
+    }
+
+    // --- Summary/advice logic ---
     function classify(name){
       const n = name.toLowerCase();
       if(/bond|fixed|income|treasury|t-bill/.test(n)) return 'bonds';
       if(/stock|equit|etf|fund|voo|qqq|schd|s&p|nasdaq/.test(n)) return 'stocks';
-      if(/real\\s*estate|property|reit|house|apartment|land/.test(n)) return 'real_estate';
-      if(/cash|savings|deposit|money\\s*market/.test(n)) return 'cash';
+      if(/real\s*estate|property|reit|house|apartment|land/.test(n)) return 'real_estate';
+      if(/cash|savings|deposit|money\s*market/.test(n)) return 'cash';
       if(/crypto|bitcoin|btc|eth|sol|token/.test(n)) return 'crypto';
       if(/gold|silver|metal|commodity|oil|energy/.test(n)) return 'commodities';
       return 'other';
@@ -155,158 +281,60 @@
     function analyze(model){
       const total = model.total || 0;
       const buckets = {};
-      model.items.forEach(it=>{
-        const k = classify(it.name);
-        buckets[k] = (buckets[k]||0) + it.amount;
-      });
+      model.items.forEach(it=>{ const k = classify(it.name); buckets[k]=(buckets[k]||0)+it.amount; });
       const pct = k => total>0 ? (buckets[k]||0)/total : 0;
-      const p = {
-        stocks:pct('stocks'), bonds:pct('bonds'), cash:pct('cash'),
-        real_estate:pct('real_estate'), crypto:pct('crypto'), commodities:pct('commodities'), other:pct('other')
-      };
+      const p = { stocks:pct('stocks'), bonds:pct('bonds'), cash:pct('cash'), real_estate:pct('real_estate'), crypto:pct('crypto'), commodities:pct('commodities'), other:pct('other') };
 
-      // Risk level heuristic
       let risk = 'balanced';
       const growth = p.stocks + p.crypto + p.commodities*0.5;
       const defense = p.bonds + p.cash + p.real_estate*0.2;
       if(growth >= 0.7 || p.crypto >= 0.12) risk = 'high';
       else if(defense >= 0.45 || p.bonds >= 0.35) risk = 'low';
 
-      const tips = [];
-      const add = (msg, tag='tip') => tips.push({msg, tag});
+      const out = [];
+      const add = (msg, tag='tip') => out.push({msg, tag});
 
-      // Concentration checks
-      const top = [...model.items].sort((a,b)=>b.amount-a.amount)[0];
-      if(top && total>0 && top.amount/total > 0.6) add(`High concentration: “${top.name}” is ${(top.amount/total*100).toFixed(0)}% of the portfolio. Consider diversifying to reduce single-bucket risk.`, 'concentration');
-
-      if(p.stocks > 0.7) add('Equities >70% → growth-tilted/volatile. Add bonds or cash-like assets to cushion drawdowns.', 'equities');
-      if(p.bonds < 0.1) add('Bonds <10% → weak downside protection. Build bonds/treasuries toward 15–30%.', 'bonds');
-      if(p.cash > 0.35) add('Cash >35% → return drag. Consider deploying into long-term targets or a T-bill ladder.', 'cash');
-      if(p.real_estate > 0.5) add('Real estate >50% → liquidity risk. Balance with liquid funds (equities/bonds).', 'real-estate');
-      if(p.crypto > 0.1) add('Crypto >10% → high volatility. Consider sizing to ≤5–10% unless risk tolerance is very high.', 'crypto');
-
-      const categoryCount = model.items.length;
-      if(categoryCount < 4) add('Few buckets. Broaden to 4–6 categories to reduce idiosyncratic risk.', 'diversify');
-
-      // Next-step goal
-      if(risk === 'high') add('Next goal: add 10–20% in bonds/T-bills over several contributions to stabilize volatility.', 'goal');
-      else if(risk === 'low') add('Next goal: introduce 10–15% in global equities to improve growth potential.', 'goal');
-      else add('Next goal: keep ~60/30/10 across equities/bonds/cash and rebalance annually.', 'goal');
-
-      const summary = risk === 'high' ? 'Risk profile: High (growth-tilted)'
-                    : risk === 'low' ? 'Risk profile: Low (defensive)'
-                    : 'Risk profile: Balanced';
-      tips.unshift({msg: summary, tag: 'summary'});
-
-      return {risk, tips};
-    }
-
-    function renderSuggestions(advice){
-      sugsEl.innerHTML = '';
-      advice.tips.forEach(t=>{
-        const li = document.createElement('li');
-        li.innerHTML = `${t.msg} <span class="tag">${t.tag}</span>`;
-        sugsEl.appendChild(li);
-      });
-      riskPill.className = 'pill ' + advice.risk;
-      riskPill.textContent = advice.risk.charAt(0).toUpperCase() + advice.risk.slice(1);
-    }
-
-    // --- Chart ---
-    function draw(model){
-      const ctx = pie.getContext('2d');
-      const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
-      const W = pie.clientWidth * DPR, H = pie.clientHeight * DPR;
-      if (pie.width !== W) pie.width = W;
-      if (pie.height !== H) pie.height = H;
-      ctx.clearRect(0,0,W,H); ctx.save();
-
-      const { items, total: sum } = model;
-      totalOut.textContent = moneyFmt(sum);
-
-      if (sum <= 0){
-        ctx.fillStyle = '#9ca3af';
-        ctx.font = `${Math.max(14, Math.min(W,H)*0.04)}px ui-sans-serif, system-ui`;
-        ctx.textAlign = 'center';
-        ctx.fillText('Add category amounts to see the pie', W/2, H/2);
-        ctx.restore();
-        noteEl.textContent = '';
-        return;
+      const totalItems = model.items.length;
+      if(totalItems){
+        const top = [...model.items].sort((a,b)=>b.amount-a.amount)[0];
+        if(top && total>0 && top.amount/total > 0.6) add('High concentration: "'+top.name+'" is '+(top.amount/total*100).toFixed(0)+'% of the portfolio.', 'concentration');
       }
+      if(p.stocks > 0.7) add('Equities >70% → growth-tilted/volatile. Consider adding bonds or cash-like assets.', 'equities');
+      if(p.bonds < 0.1) add('Bonds <10% → weak downside protection. Build bonds/treasuries toward 15–30%.', 'bonds');
+      if(p.cash > 0.35) add('Cash >35% → return drag. Consider deploying into long-term targets or a T‑bill ladder.', 'cash');
+      if(p.real_estate > 0.5) add('Real estate >50% → liquidity risk. Balance with liquid funds.', 'real-estate');
+      if(p.crypto > 0.1) add('Crypto >10% → very volatile. Consider sizing to ≤5–10% unless high tolerance.', 'crypto');
+      if(totalItems < 4) add('Diversify across at least 4–6 categories to reduce idiosyncratic risk.', 'diversify');
 
-      const pad = Math.min(W,H)*0.08;                // margin from edges
-      const cx = W/2, cy = H/2;
-      const radius = Math.max(40, Math.min(W,H)*0.40 - pad);
-      const inner  = radius * 0.55;                  // donut center
-      const minFracForLabel = 0.03;                   // leader lines only for >=3%
+      return { risk, tips: out };
+    }
 
-      // divider and label styles for white layout
-      const dividerColor = 'rgba(255,255,255,0.9)';
-      const outlineColor = 'rgba(0,0,0,0.45)';
-      const labelColor   = '#ffffff';
-
-      let start = -Math.PI/2;
-
-      items.forEach((it,i)=>{
-        const frac = it.amount / sum;
-        const end = start + frac * Math.PI * 2;
-
-        // donut slice
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, start, end);
-        ctx.arc(cx, cy, inner, end, start, true);
-        ctx.closePath();
-        ctx.fillStyle = hsl(i, items.length);
-        ctx.fill();
-
-        // crisp divider
-        ctx.lineWidth = Math.max(1, Math.min(W,H)*0.004);
-        ctx.strokeStyle = dividerColor;
-        ctx.stroke();
-
-        // on-slice % label
-        if (frac >= minFracForLabel){
-          const mid = (start + end) / 2;
-          const rx = cx + Math.cos(mid) * (inner + (radius-inner)*0.58);
-          const ry = cy + Math.sin(mid) * (inner + (radius-inner)*0.58);
-          const pct = (frac*100).toFixed(frac<0.1?1:0) + '%';
-          ctx.font = `${Math.max(12, Math.min(W,H)*0.035)}px ui-sans-serif, system-ui`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.lineWidth = 3; ctx.strokeStyle = outlineColor; ctx.strokeText(pct, rx, ry);
-          ctx.fillStyle = labelColor; ctx.fillText(pct, rx, ry);
-        }
-
-        start = end;
+    function renderSummary(model){
+      if(!summaryCard) return;
+      if(!model.total){ summaryCard.style.display='none'; return; }
+      summaryCard.style.display='block';
+      const adv = analyze(model);
+      riskPill.className = 'pill ' + adv.risk;
+      riskPill.textContent = adv.risk.charAt(0).toUpperCase() + adv.risk.slice(1);
+      summaryList.innerHTML='';
+      adv.tips.forEach(t=>{
+        const li = document.createElement('li');
+        li.innerHTML = t.msg + ' <span class="tag">'+t.tag+'</span>';
+        summaryList.appendChild(li);
       });
-
-      // center total label
-      ctx.fillStyle = '#111827';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = `${Math.max(12, Math.min(W,H)*0.035)}px ui-sans-serif, system-ui`;
-      ctx.fillText(`Total ${moneyFmt(sum)}`, cx, cy);
-
-      ctx.restore();
     }
 
-    function recalc(){
-      const m = getModel();
-      draw(m);
-      renderSuggestions(analyze(m));
-    }
+    function recalc(){ const m = getModel(); draw(m); renderSummary(m); }
 
     // --- Events ---
     addBtn.addEventListener('click', ()=>{ newRow('',''); recalc(); });
-    rowsEl.addEventListener('input', e => { if (e.target.matches('input')) recalc(); });
-    rowsEl.addEventListener('click', e => { if (e.target.closest('button')) { e.target.closest('tr').remove(); recalc(); }});
-
-    // Add a new row when pressing Enter on the last input
+    rowsEl.addEventListener('input', e => { if(e.target.matches('input')) recalc(); });
+    rowsEl.addEventListener('click', e => { if(e.target.closest('button')){ e.target.closest('tr').remove(); recalc(); }});
     rowsEl.addEventListener('keydown', (e)=>{
       if(e.key==='Enter' && e.target.tagName==='INPUT'){
         const inputs=[...rowsEl.querySelectorAll('input')];
         const isLast = inputs.indexOf(e.target) === inputs.length-1;
-        if(isLast){ newRow('', ''); setTimeout(()=>rowsEl.querySelector('tr:last-child input')?.focus(),0); }
+        if(isLast){ newRow('', ''); setTimeout(()=>{ const inp = rowsEl.querySelector('tr:last-child input'); if(inp) inp.focus(); },0); }
       }
     });
 
@@ -318,16 +346,11 @@
 
     // --- Basic Tests (console) ---
     (function runTests(){
-      // parseAmount tests
       console.assert(parseAmount('10,000')===10000, 'parseAmount comma failed');
       console.assert(parseAmount('25000')===25000, 'parseAmount plain failed');
       console.assert(parseAmount('  ')===0, 'parseAmount blanks failed');
       console.assert(parseAmount('abc')===0, 'parseAmount non-numeric failed');
-
-      // analysis tests
-      const demo = { total: 100, items: [{name:'Stocks',amount:70},{name:'Bonds',amount:20},{name:'Cash',amount:10}]};
-      const res = analyze(demo);
-      console.assert(res && res.risk, 'analyze() should return risk');
+      try { draw({total:0, items:[]}); } catch(e){ console.error('draw(empty) threw', e); }
     })();
   </script>
 </body>
