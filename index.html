@@ -129,56 +129,111 @@
     }
 
     // --- Chart ---
-    function draw(model){
-      const ctx=pie.getContext('2d');
-      const DPR=Math.max(1,Math.floor(window.devicePixelRatio||1));
-      const W=pie.clientWidth*DPR; const H=pie.clientHeight*DPR;
-      if(pie.width!==W) pie.width=W; if(pie.height!==H) pie.height=H;
-      ctx.clearRect(0,0,W,H); ctx.save();
+   function draw(model) {
+  updateComputed(model); // keep for now, until we switch to amounts-only
 
-      const items=model.items; const sum=model.total;
-      totalOut.textContent = moneyFmt(sum);
-      legendEl.innerHTML='';
+  const ctx = pie.getContext('2d');
+  const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+  const W = pie.clientWidth * DPR;
+  const H = pie.clientHeight * DPR;
+  if (pie.width !== W) pie.width = W;
+  if (pie.height !== H) pie.height = H;
 
-      if(sum<=0){
-        ctx.fillStyle='#9ca3af';
-        ctx.font=`${Math.max(14,Math.min(W,H)*0.04)}px ui-sans-serif, system-ui`;
-        ctx.textAlign='center';
-        ctx.fillText('Add category amounts to see the pie', W/2, H/2);
-        ctx.restore();
-        noteEl.textContent='';
-        return;
-      }
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
 
-      const cx=W/2, cy=H/2; const radius=Math.max(40,Math.min(W,H)*0.36);
-      let start=-Math.PI/2;
+  const items = model.items;
+  const sum = items.reduce((a, b) => a + b.amount, 0);
 
-      items.forEach((it,i)=>{
-        const frac=it.amount/sum; const end=start+frac*Math.PI*2;
-        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,radius,start,end); ctx.closePath();
-        ctx.fillStyle=hsl(i,items.length); ctx.fill();
+  // notes/legend
+  const remaining = model.total > 0 ? (model.total - sum) : 0;
+  const over = remaining < 0;
+  noteEl.innerHTML = model.total
+    ? `${over ? '<span class="warn">Over by ' + moneyFmt(Math.abs(remaining)) + '</span>' : 'Remaining: ' + moneyFmt(remaining)}`
+    : 'Enter total to enable % inputs.';
+  legendEl.innerHTML = '';
 
-        // leader lines
-        const mid=(start+end)/2; const lx=cx+Math.cos(mid)*(radius+10); const ly=cy+Math.sin(mid)*(radius+10);
-        ctx.beginPath(); ctx.moveTo(cx+Math.cos(mid)*(radius*0.8), cy+Math.sin(mid)*(radius*0.8)); ctx.lineTo(lx,ly);
-        ctx.lineWidth=1.25; ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.stroke();
+  if (sum <= 0) {
+    ctx.fillStyle = '#64748b';
+    ctx.font = `${Math.max(14, Math.min(W, H) * 0.04)}px ui-sans-serif, system-ui`;
+    ctx.textAlign = 'center';
+    ctx.fillText('Add amounts or % to see the pie', W / 2, H / 2);
+    ctx.restore();
+    return;
+  }
 
-        // legend
-        const li=document.createElement('div'); li.className='legend-item';
-        li.innerHTML=`<div class="swatch" style="background:${hsl(i,items.length)}"></div>
-          <div><div style="font-weight:600">${it.name}</div>
-          <div class="muted mono">${moneyFmt(it.amount)} · ${(frac*100).toFixed(1)}%</div></div>`;
-        legendEl.appendChild(li);
+  // --- important tweaks ---
+  const pad = Math.min(W, H) * 0.08;        // keep comfortable margin
+  const cx = W / 2, cy = H / 2;
+  const radius = Math.max(40, Math.min(W, H) * 0.40 - pad); // slightly smaller radius
+  const inner = radius * 0.55;              // donut inner radius (set to 0 for a full pie)
+  const minFracForLine = 0.03;              // show leader lines only for slices >= 3%
+  const lineOut = 10;                       // how far lines extend beyond the arc
+  const lineIn  = radius * 0.78;            // where lines start (inside the slice)
+  // ----------------------------------------
 
-        start=end;
-      });
+  let start = -Math.PI / 2;
 
-      // center label
-      ctx.fillStyle='#111827'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.font=`${Math.max(12,Math.min(W,H)*0.035)}px ui-sans-serif, system-ui`;
-      ctx.fillText(`Total ${moneyFmt(sum)}`, cx, cy);
-      ctx.restore();
+  items.forEach((it, i) => {
+    const frac = it.amount / sum;
+    const end = start + frac * Math.PI * 2;
+
+    // slice
+    ctx.beginPath();
+    if (inner > 0) {
+      // donut: draw outer arc then inner arc back
+      ctx.arc(cx, cy, radius, start, end);
+      ctx.arc(cx, cy, inner, end, start, true);
+      ctx.closePath();
+    } else {
+      // full pie
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, start, end);
+      ctx.closePath();
     }
+    ctx.fillStyle = hsl(i, items.length);
+    ctx.fill();
+
+    // leader line (only for decent-sized slices)
+    if (frac >= minFracForLine) {
+      const mid = (start + end) / 2;
+      const sx = cx + Math.cos(mid) * lineIn;
+      const sy = cy + Math.sin(mid) * lineIn;
+      const ex = cx + Math.cos(mid) * (radius + lineOut);
+      const ey = cy + Math.sin(mid) * (radius + lineOut);
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(ex, ey);
+      ctx.lineWidth = 1.25;
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)'; // subtle on white
+      ctx.stroke();
+    }
+
+    // legend
+    const li = document.createElement('div');
+    li.className = 'legend-item';
+    li.innerHTML = `
+      <div class="swatch" style="background:${hsl(i, items.length)}"></div>
+      <div>
+        <div style="font-weight:600">${it.name}</div>
+        <div class="muted mono">${moneyFmt(it.amount)} · ${(frac*100).toFixed(1)}%</div>
+      </div>
+    `;
+    legendEl.appendChild(li);
+
+    start = end;
+  });
+
+  // center label (reads well with donut)
+  ctx.fillStyle = inner > 0 ? '#111827' : '#cbd5e1';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `${Math.max(12, Math.min(W, H) * 0.035)}px ui-sans-serif, system-ui`;
+  ctx.fillText(`Total ${model.total ? moneyFmt(model.total) : moneyFmt(sum)}`, cx, cy);
+
+  ctx.restore();
+}
+
 
     function recalc(){ draw(getModel()); }
 
