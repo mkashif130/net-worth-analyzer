@@ -1,576 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AED Net Worth Planner — V1.4 (Pies + Rate Control)</title>
-<style>
-  :root{
-    --bg:#f7f9fc; --card:#ffffff; --ink:#0f172a; --muted:#5b6b88; --line:#e5e9f2; --accent:#2b6cff;
-    --ok:#27a36a; --warn:#d4a018; --bad:#e05252;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial}
-  h1,h2,h3{margin:0 0 .5rem} h1{font-size:1.28rem} h2{font-size:1.05rem} h3{font-size:.95rem;color:var(--muted)}
-  .wrap{max-width:1100px;margin:28px auto;padding:0 16px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 6px 24px #0b1a3320}
-  .row{display:flex;gap:12px;flex-wrap:wrap} .row>div{flex:1 1 240px;min-width:220px}
-  label{display:block;font-size:.85rem;color:#3b475d;margin:2px 0 6px}
-  input,select,button{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #cfd7e6;background:#fff;color:#000;font:inherit;outline:none}
-  input:focus,select:focus{border-color:#8fb0ff;box-shadow:0 0 0 3px #2b6cff22}
-  button{cursor:pointer;background:linear-gradient(180deg,#2b6cff,#2158d1);border:1px solid #1e4fc0;color:#fff}
-  button.ghost{background:#f2f6ff;border-color:#d7e5ff;color:#1b3b8d}
-  .progress{height:8px;background:#edf2ff;border-radius:999px;overflow:hidden;margin:10px 0 16px;border:1px solid #dfe7fb}
-  .bar{height:100%;background:var(--accent);width:0%;transition:width .25s ease}
-  .hide{display:none}
-  .mini{font-size:.86rem;color:#6a7b98}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portfolio Concentration • Pie</title>
+  <style>
+    :root{
+      --bg:#ffffff;--ink:#0b1220;--muted:#6b7280;--ring:#e5e7eb;--accent:#2563eb;--radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:var(--bg);color:var(--ink)}
+    .wrap{max-width:900px;margin:24px auto;padding:12px;display:grid;gap:16px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    h1{font-size:18px;margin:0;letter-spacing:.2px;font-weight:700}
+    .card{background:#fff;border:1px solid var(--ring);border-radius:var(--radius);padding:14px;box-shadow:0 8px 24px rgba(2,6,23,.04)}
+    .row{display:grid;grid-template-columns:1fr;gap:16px}
+    @media(min-width:860px){.row{grid-template-columns:1.2fr 1fr}}
+    label{font-size:12px;color:var(--muted)}
+    input[type=text]{width:100%;background:#ffffff;border:1px solid #d1d5db;color:var(--ink);border-radius:12px;padding:10px 12px;outline:none;transition:border-color .15s ease}
+    input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px 8px;text-align:left}
+    th{font-weight:600;color:#111827;font-size:12px;letter-spacing:.3px}
+    tr{border-bottom:1px dashed #e5e7eb}
+    tr:last-child{border-bottom:none}
+    .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    .ghost-btn{background:#ffffff;border:1px solid #d1d5db;color:#111827;border-radius:12px;padding:8px 10px;cursor:pointer;font-weight:600;font-size:13px}
+    .ghost-btn:hover{border-color:var(--accent);color:#0b1220}
+    .icon-btn{background:transparent;border:none;color:#6b7280;cursor:pointer;padding:6px;border-radius:8px}
+    .icon-btn:hover{background:#f3f4f6;color:#111827}
+    .muted{color:var(--muted);font-size:12px}
 
-  /* Results header */
-  .results-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;flex-wrap:wrap}
-  .picker{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
-  .picker select,.picker input{min-width:120px;width:auto}
+    /* Chart */
+    .chart-card{display:grid;gap:8px}
+    canvas{width:100%;height:360px;display:block}
+    .legend{display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+    .legend-item{display:grid;grid-template-columns:14px 1fr;gap:8px;align-items:center}
+    .swatch{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.08)}
 
-  /* KPI tiles */
-  .kpis{display:grid;gap:12px}
-  .kpis--results{grid-template-columns:repeat(4,1fr)}
-  .kpis--ret{grid-template-columns:repeat(4,1fr)}
-  .stat{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid #e6ebf5;border-radius:12px;background:#fbfdff}
-  .stat strong{font-size:1.18rem;font-variant-numeric:tabular-nums}
-  .unit{font-size:.82rem;color:#8a99b6;margin-left:6px}
-  .stat--emph{background:#f6fbff;border-color:#e2f1ff}
-
-  /* Sections on results (stacked, full-width) */
-  .section{margin-top:14px}
-  .section h3{color:#34486b}
-  .table{width:100%;border-collapse:collapse;margin-top:8px;font-variant-numeric:tabular-nums}
-  .table th,.table td{padding:10px 12px;border-bottom:1px dashed #e1e7f3;text-align:right}
-  .table th:first-child,.table td:first-child{text-align:left}
-  .table thead th{font-weight:600;color:#415274}
-  .table tbody tr:nth-child(odd){background:#fafcff}
-  .table .th--emph,.table td:last-child{font-weight:700;color:#1b3b8d}
-
-  /* Charts */
-canvas.chart{display:block;width:100%;min-height:300px;background:#fff;border:1px solid #e7edf7;border-radius:12px}
-
-/* Keep pies perfectly round via a square box */
-#pieAssets, #pieLiabs{
-  aspect-ratio: 1 / 1;   /* square area in CSS */
-  min-height: 300px;     /* guarantees space when first shown */
-}
-
-  .legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
-  .legend .dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:middle}
-
-  .tip{background:#f6fbff;border:1px solid #e2f1ff;border-radius:10px;padding:8px;color:#31507f;margin:8px 0}
-  .callout{margin:10px 0 0;padding:10px 12px;border:1px solid #e6efff;background:#f6faff;border-radius:10px;color:#314e84}
-  .results-actions{display:flex;justify-content:space-between;gap:10px;margin-top:16px}
-
-  /* “Add …” button inline */
-  .inlineAdd{width:auto}
-
-  #toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:8px 12px;border-radius:10px;box-shadow:0 8px 20px #0002;opacity:0;pointer-events:none;transition:.25s}
-  #toast.show{opacity:1}
-canvas.chart { min-height: 260px; }
-
-  @media (max-width:900px){
-    .kpis--results,.kpis--ret{grid-template-columns:1fr 1fr}
-  }
-</style>
+    /* Sticky total */
+    .totalbar{position:sticky;bottom:0;background:#fff;border:1px solid var(--ring);border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -6px 18px rgba(2,6,23,.05)}
+  </style>
 </head>
 <body>
-<div id="toast">Calculating…</div>
-<div class="wrap">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-    <h1>AED Net Worth & Retirement Planner</h1>
-    <span class="mini">V1.4 • Pies • Rate control • AED</span>
+  <div class="wrap">
+    <header>
+      <h1>Portfolio Concentration</h1>
+      <div class="muted">Enter amounts only (no %). The pie and total update automatically.</div>
+    </header>
+
+    <section class="card row">
+      <div class="left">
+        <div class="card" style="padding:0; border-radius:12px;">
+          <table id="tbl">
+            <thead>
+              <tr>
+                <th style="width:60%">Category</th>
+                <th style="width:30%">Amount</th>
+                <th style="width:10%"></th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:10px; align-items:center;">
+          <button id="add" class="ghost-btn">+ Add Category</button>
+          <div id="note" class="muted"></div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <canvas id="pie" width="600" height="600" aria-label="Portfolio pie chart"></canvas>
+        <div id="legend" class="legend"></div>
+      </div>
+    </section>
+
+    <div class="totalbar" id="totalbar">
+      <div class="muted">Total Portfolio</div>
+      <div class="mono" id="totalOut">0</div>
+    </div>
   </div>
-  <div class="progress"><div class="bar" id="bar"></div></div>
 
-  <!-- STEP 1 — ASSETS -->
-  <section class="card step" data-step="1">
-    <h2>Step 1 — Assets (AED)</h2>
-    <p class="tip">Enter what you own. You can add/remove properties as needed.</p>
-    <div class="row" style="margin-top:6px">
-      <div><label>Stocks / ETFs</label><input id="stocks" type="number" step="1" value="0"></div>
-      <div><label>Cash</label><input id="cash" type="number" step="1" value="0"></div>
-      <div><label>Emergency Fund</label><input id="ef" type="number" step="1" value="0"></div>
-    </div>
-    <h3 style="margin:8px 0 6px">Properties (AED)</h3>
-    <div id="propList"></div>
-    <div class="row" style="margin-top:6px"><div style="flex:0 0 auto"><button id="addProp" type="button" class="ghost inlineAdd">+ Add Property</button></div></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button id="next1" type="button">Next</button></div>
-  </section>
+  <script>
+    // --- Utilities ---
+    const byId = (id) => document.getElementById(id);
+    const fmt = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+    const moneyFmt = (n) => (isFinite(n) ? fmt.format(n) : "—");
 
-  <!-- STEP 2 — LIABILITIES (simple totals) -->
-  <section class="card step hide" data-step="2">
-    <h2>Step 2 — Liabilities (AED)</h2>
-    <p class="tip">Just enter your current balances.</p>
-    <div class="row">
-      <div><label>Mortgage (total)</label><input id="mortTot" type="number" step="1" value="0"></div>
-      <div><label>Car Loan (total)</label><input id="carTot" type="number" step="1" value="0"></div>
-      <div><label>Other Loans (total)</label><input id="othTot" type="number" step="1" value="0"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-top:12px">
-      <button class="ghost" type="button" data-back>Back</button>
-      <button id="next2" type="button">Next</button>
-    </div>
-  </section>
+    function parseAmount(str){
+      if(typeof str !== 'string') return 0;
+      const clean = str.replace(/[,\\s]/g,'');
+      const num = Number(clean);
+      return isFinite(num) && num > 0 ? num : 0;
+    }
+    function hsl(i,n){ const hue=(i*360/Math.max(1,n))%360; return `hsl(${hue} 70% 50%)`; }
 
-  <!-- STEP 3 — PROJECTION -->
-  <section class="card step hide" data-step="3">
-    <h2>Step 3 — Projection</h2>
-    <p class="tip">Investing assumptions and horizon.</p>
-    <div class="row">
-      <div><label>Monthly Investment</label><input id="monthly" type="number" step="1" value="0"></div>
-      <div><label>Semiannual Investment</label><input id="semi" type="number" step="1" value="0"></div>
-      <div><label>Semiannual Investments Until (Year)</label><input id="semiUntil" type="number" step="1" value=""></div>
-    </div>
-    <div class="row">
-      <div><label>Expected Annual Return (%)</label><input id="retPct" type="number" step="0.1" value="0"></div>
-      <div><label>Dividend Yield (%)</label><input id="divPct" type="number" step="0.1" value="0"></div>
-      <div><label>Projection Horizon</label><select id="horizon"></select></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-top:12px">
-      <button class="ghost" type="button" data-back>Back</button>
-      <button id="next3" type="button">Next</button>
-    </div>
-  </section>
+    // --- Elements ---
+    const rowsEl = byId('rows');
+    const addBtn = byId('add');
+    const noteEl = byId('note');
+    const pie = byId('pie');
+    const legendEl = byId('legend');
+    const totalOut = byId('totalOut');
 
-  <!-- STEP 4 — RETIREMENT -->
-  <section class="card step hide" data-step="4">
-    <h2>Step 4 — Retirement</h2>
-    <p class="tip">Your target spend and withdrawal assumptions.</p>
-    <div class="row">
-      <div><label>Target Yearly Spend</label><input id="retSpend" type="number" step="1" value="0"></div>
-      <div><label>Safe Withdrawal Rate (%)</label><input id="swr" type="number" step="0.1" value="0"></div>
-      <div>
-        <label>Include Property for Withdrawals?</label>
-        <select id="includeProp">
-          <option value="no">No (liquid only)</option>
-          <option value="half">Yes, count 50%</option>
-          <option value="yes">Yes, count 100%</option>
-        </select>
-      </div>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-top:12px">
-      <button class="ghost" type="button" data-back>Back</button>
-      <button id="calc" type="button">Calculate</button>
-    </div>
-  </section>
+    // --- Rows ---
+    function newRow(category='', value=''){
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td><input type="text" placeholder="e.g., Stocks" value="${category}"/></td>
+        <td><input type="text" class="mono" placeholder="e.g., 50000" value="${value}"/></td>
+        <td style="text-align:right"><button class="icon-btn" title="Remove" aria-label="Remove">✕</button></td>
+      `;
+      rowsEl.appendChild(tr);
+    }
+    function seed(){ newRow('Stocks',''); newRow('Real Estate',''); newRow('Cash',''); newRow('Crypto',''); }
 
-  <!-- RESULTS -->
-  <section class="card" id="results" style="display:none">
-    <div class="results-header">
-      <h2>Results</h2>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <label class="picker">
-          <span>Horizon</span>
-          <select id="hzRes"></select>
-        </label>
-        <label class="picker">
-          <span>Return %</span>
-          <input id="rateRes" type="number" step="0.1" style="width:110px" />
-        </label>
-      </div>
-    </div>
+    function getModel(){
+      const model=[];
+      [...rowsEl.querySelectorAll('tr')].forEach((tr,idx)=>{
+        const name=(tr.querySelector('td:nth-child(1) input').value.trim()||`Category ${idx+1}`);
+        const raw=tr.querySelector('td:nth-child(2) input').value;
+        const amount=parseAmount(raw);
+        if(amount>0) model.push({name,amount});
+      });
+      const total=model.reduce((a,b)=>a+b.amount,0);
+      return { total, items:model };
+    }
 
-    <div class="kpis kpis--results">
-      <div class="stat"><div>Total Assets</div><div><strong id="assetsAED">–</strong><span class="unit">AED</span></div></div>
-      <div class="stat"><div>Liabilities</div>  <div><strong id="liabOut">–</strong><span class="unit">AED</span></div></div>
-      <div class="stat stat--emph"><div>Net Worth</div><div><strong id="nwAED">–</strong><span class="unit">AED</span></div></div>
-      <div class="stat">
-        <div>Using Rates</div>
-        <div><strong id="rateUsed">–</strong><span class="unit">return</span></div>
-        <div style="font-size:.82rem;color:#6d7d9c;margin-top:-2px">Dividends: <span id="divUsed">–</span></div>
-      </div>
-    </div>
+    // --- Chart ---
+    function draw(model){
+      const ctx=pie.getContext('2d');
+      const DPR=Math.max(1,Math.floor(window.devicePixelRatio||1));
+      const W=pie.clientWidth*DPR; const H=pie.clientHeight*DPR;
+      if(pie.width!==W) pie.width=W; if(pie.height!==H) pie.height=H;
+      ctx.clearRect(0,0,W,H); ctx.save();
 
-    <!-- Projection Line Chart (full width) -->
-    <div class="section">
-      <h3>Projection of Net Worth</h3>
-      <canvas id="chart" class="chart" height="320"></canvas>
-    </div>
+      const items=model.items; const sum=model.total;
+      totalOut.textContent = moneyFmt(sum);
+      legendEl.innerHTML='';
 
-    <!-- Projection Table (full width) -->
-    <div class="section">
-      <h3>Projection Table (last year first)</h3>
-      <table class="table" id="projTable">
-        <thead><tr>
-          <th>Year</th><th>Stocks</th><th>Dividends</th><th>Properties</th><th>Cash+EF</th><th>Liabilities</th><th class="th--emph">Net Worth</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
+      if(sum<=0){
+        ctx.fillStyle='#9ca3af';
+        ctx.font=`${Math.max(14,Math.min(W,H)*0.04)}px ui-sans-serif, system-ui`;
+        ctx.textAlign='center';
+        ctx.fillText('Add category amounts to see the pie', W/2, H/2);
+        ctx.restore();
+        noteEl.textContent='';
+        return;
+      }
 
-    <!-- Pies (each on its own line, full width) -->
-    <div class="section">
-      <h3>Assets Breakdown</h3>
-      <canvas id="pieAssets" class="chart" height="300"></canvas>
-      <div id="legendAssets" class="legend"></div>
-    </div>
+      const cx=W/2, cy=H/2; const radius=Math.max(40,Math.min(W,H)*0.36);
+      let start=-Math.PI/2;
 
-    <div class="section">
-      <h3>Liabilities Breakdown</h3>
-      <canvas id="pieLiabs" class="chart" height="300"></canvas>
-      <div id="legendLiabs" class="legend"></div>
-    </div>
+      items.forEach((it,i)=>{
+        const frac=it.amount/sum; const end=start+frac*Math.PI*2;
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,radius,start,end); ctx.closePath();
+        ctx.fillStyle=hsl(i,items.length); ctx.fill();
 
-    <!-- Retirement Snapshot -->
-    <div class="section">
-      <h3>Retirement Snapshot</h3>
-      <div class="kpis kpis--ret">
-        <div class="stat"><div>Projected Net @ Horizon</div><div><strong id="retProj">–</strong><span class="unit">AED</span></div></div>
-        <div class="stat"><div>Withdrawal Base</div>        <div><strong id="retBase">–</strong><span class="unit">AED</span></div></div>
-        <div class="stat"><div>SWR Income</div>             <div><strong id="retSWR">–</strong><span class="unit">AED/yr</span></div></div>
-        <div class="stat"><div>Est. Dividends</div>         <div><strong id="retDivs">–</strong><span class="unit">AED/yr</span></div></div>
-      </div>
-      <p class="callout" id="retMsg"></p>
-    </div>
+        // leader lines
+        const mid=(start+end)/2; const lx=cx+Math.cos(mid)*(radius+10); const ly=cy+Math.sin(mid)*(radius+10);
+        ctx.beginPath(); ctx.moveTo(cx+Math.cos(mid)*(radius*0.8), cy+Math.sin(mid)*(radius*0.8)); ctx.lineTo(lx,ly);
+        ctx.lineWidth=1.25; ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.stroke();
 
-    <div class="results-actions">
-      <button class="ghost" type="button" id="editAgain">← Edit inputs</button>
-      <button class="ghost" type="button" id="reset">Reset</button>
-    </div>
-  </section>
-</div>
+        // legend
+        const li=document.createElement('div'); li.className='legend-item';
+        li.innerHTML=`<div class="swatch" style="background:${hsl(i,items.length)}"></div>
+          <div><div style="font-weight:600">${it.name}</div>
+          <div class="muted mono">${moneyFmt(it.amount)} · ${(frac*100).toFixed(1)}%</div></div>`;
+        legendEl.appendChild(li);
 
-<script>
-/* =================== GLOBAL STATE =================== */
-const STATE = {
-  // Step 1
-  stocks:0, cash:0, ef:0, props:[],
-  // Step 2 — simple totals
-  mortTot:0, carTot:0, othTot:0,
-  // Step 3
-  monthly:0, semi:0, semiUntil:(new Date()).getFullYear(), retPct:0, divPct:0, horizon:5,
-  // Step 4
-  retSpend:0, swr:0, includeProp:"no"
-};
+        start=end;
+      });
 
-/* =================== HELPERS =================== */
-const $  = s => document.querySelector(s);
-const $$ = s => Array.from(document.querySelectorAll(s));
-const fmt = n => (n===null||isNaN(n)) ? "–" : n.toLocaleString(undefined,{maximumFractionDigits:0});
-const YEAR0 = (new Date()).getFullYear();
-function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 900); }
+      // center label
+      ctx.fillStyle='#111827'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font=`${Math.max(12,Math.min(W,H)*0.035)}px ui-sans-serif, system-ui`;
+      ctx.fillText(`Total ${moneyFmt(sum)}`, cx, cy);
+      ctx.restore();
+    }
 
-/* Progress / steps */
-const steps = []; let cur = 1;
-function setProgress(){ $("#bar").style.width = ((cur-1)/(steps.length))*100 + "%"; }
-function showStep(n){ cur=n; steps.forEach(s=>s.classList.toggle("hide", +s.dataset.step!==n)); setProgress(); }
-const hideResults = () => { const r=$("#results"); if(r) r.style.display="none"; };
+    function recalc(){ draw(getModel()); }
 
-/* Horizon options filler */
-function fillHorizonOptions(selectEl, value) {
-  if (!selectEl) return;
-  selectEl.innerHTML = "";
-  for (let y = 5; y <= 80; y += 5) {
-    const opt = document.createElement("option");
-    opt.value = String(y);
-    opt.textContent = `${y} years`;
-    selectEl.appendChild(opt);
-  }
-  selectEl.value = String(value || 5);
-}
+    // --- Events ---
+    addBtn.addEventListener('click', ()=>{ newRow('',''); recalc(); });
+    rowsEl.addEventListener('input',(e)=>{ if(e.target.matches('input')) recalc(); });
+    rowsEl.addEventListener('click',(e)=>{ if(e.target.closest('button')){ e.target.closest('tr').remove(); recalc(); }});
 
-/* =================== UI BINDING =================== */
-function hydrateStep1(){
-  $("#stocks").value=STATE.stocks; $("#cash").value=STATE.cash; $("#ef").value=STATE.ef;
-  const list=$("#propList"); list.innerHTML="";
-  STATE.props.forEach(v=> list.appendChild(propRow(v)));
-}
-function hydrateStep2(){
-  $("#mortTot").value = STATE.mortTot;
-  $("#carTot").value  = STATE.carTot;
-  $("#othTot").value  = STATE.othTot;
-}
-function hydrateStep3(){
-  fillHorizonOptions($("#horizon"), STATE.horizon);
-  $("#monthly").value=STATE.monthly; $("#semi").value=STATE.semi; $("#semiUntil").value=STATE.semiUntil||"";
-  $("#retPct").value=STATE.retPct; $("#divPct").value=STATE.divPct;
-}
-function hydrateStep4(){
-  $("#retSpend").value=STATE.retSpend; $("#swr").value=STATE.swr; $("#includeProp").value=STATE.includeProp;
-}
+    // Init
+    seed(); recalc();
 
-/* Collectors */
-function collectStep1(){
-  STATE.stocks=+($("#stocks").value||0);
-  STATE.cash=+($("#cash").value||0);
-  STATE.ef=+($("#ef").value||0);
-  STATE.props = $$("#propList input").map(i=>+(i.value||0)).filter(v=>v>0);
-}
-function collectStep2(){
-  STATE.mortTot=+($("#mortTot").value||0);
-  STATE.carTot =+($("#carTot").value||0);
-  STATE.othTot =+($("#othTot").value||0);
-}
-function collectStep3(){
-  STATE.monthly=+($("#monthly").value||0);
-  STATE.semi=+($("#semi").value||0);
-  STATE.semiUntil=+($("#semiUntil").value||YEAR0);
-  STATE.retPct=+($("#retPct").value||0);
-  STATE.divPct=+($("#divPct").value||0);
-  const hz=parseInt($("#horizon").value,10); STATE.horizon = Number.isFinite(hz)&&hz>0?hz:5;
-}
-function collectStep4(){
-  STATE.retSpend=+($("#retSpend").value||0);
-  STATE.swr=+($("#swr").value||0);
-  STATE.includeProp=$("#includeProp").value || "no";
-}
-
-/* Dynamic rows (properties) */
-function propRow(value=0){
-  const wrap=document.createElement("div"); wrap.className="row"; wrap.style.marginTop="6px";
-  wrap.innerHTML = `
-    <div><label>Property Value</label><input type="number" step="1" value="${value||""}" placeholder="e.g., 1000000"></div>
-    <div style="flex:0 0 auto"><label>&nbsp;</label><button type="button" class="ghost del inlineAdd">✕</button></div>`;
-  wrap.querySelector(".del").addEventListener("click", ()=>{
-    wrap.remove(); STATE.props = $$("#propList input").map(i=>+(i.value||0)).filter(v=>v>0);
-  });
-  wrap.querySelector("input").addEventListener("change", ()=>{
-    STATE.props = $$("#propList input").map(i=>+(i.value||0)).filter(v=>v>0);
-  });
-  return wrap;
-}
-
-/* =================== CHARTS =================== */
-  // Prepare a canvas with correct DPR scaling
-function prepCanvas(canvas){
-  const dpr = window.devicePixelRatio || 1;
-  const cw = Math.max(120, canvas.clientWidth  || 0);
-  const ch = Math.max(120, canvas.clientHeight || 0);
-  canvas.width  = Math.floor(cw * dpr);
-  canvas.height = Math.floor(ch * dpr);
-  const ctx = canvas.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  return { ctx, cw, ch };
-}
-// Line
-function drawLine(canvas, labels, series){
-  const { ctx, cw:w, ch:h } = prepCanvas(canvas);
-  ctx.clearRect(0,0,w,h);
-  if(!series || series.length===0){ ctx.fillStyle="#66789b"; ctx.fillText("No data", 12, 20); return; }
-
-  const padL=60,padR=10,padT=12,padB=28, iw=w-padL-padR, ih=h-padT-padB;
-  let lo = Math.min(...series), hi = Math.max(...series);
-  if (hi===lo) { hi = lo+1; }
-  const sx=i=> padL + (i/(series.length-1))*iw;
-  const sy=v=> padT + ih - ((v-lo)/(hi-lo))*ih;
-
-  ctx.strokeStyle="#e6ecf7"; ctx.beginPath();
-  for(let i=0;i<=4;i++){ const y=padT+(i/4)*ih; ctx.moveTo(padL,y); ctx.lineTo(w-padR,y);} ctx.stroke();
-
-  ctx.strokeStyle="#2b6cff"; ctx.lineWidth=2; ctx.beginPath();
-  series.forEach((v,i)=>{ const x=sx(i), y=sy(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
-  ctx.stroke();
-
-  ctx.fillStyle="#2b6cff";
-  series.forEach((v,i)=>{ const x=sx(i), y=sy(v); ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); });
-}
-// Pie
-// ------- Pie chart (perfect circle, safe radius) -------
-function drawPie(canvas, slices, colors, labels, legendEl){
-  const { ctx, cw:w, ch:h } = prepCanvas(canvas);
-  ctx.clearRect(0,0,w,h);
-
-  // sanitize values
-  const vals = (slices||[]).map(v => Math.max(0, Number(v)||0));
-  const total = vals.reduce((a,b)=>a+b,0);
-  if(total <= 0){
-    ctx.fillStyle="#66789b"; ctx.font="12px system-ui"; ctx.fillText("No data", 12, 20);
-    if(legendEl) legendEl.innerHTML = "";
-    return;
-  }
-
-  // draw using a TRUE circle (square fit)
-  const size = Math.min(w, h);
-  const pad  = 20;
-  const r    = Math.max(12, size/2 - pad);
-  const cx   = w/2, cy = h/2;
-
-  let start = -Math.PI/2;
-  vals.forEach((val,i)=>{
-    const ang = (val/total) * Math.PI*2;
-    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+ang); ctx.closePath();
-    ctx.fillStyle = colors[i % colors.length]; ctx.fill();
-    start += ang;
-  });
-
-  if(legendEl){
-    legendEl.innerHTML = labels.map((l,i)=>
-      `<span><span class="dot" style="background:${colors[i%colors.length]}"></span>${l}: <strong>${vals[i].toLocaleString()}</strong> AED</span>`
-    ).join(" ");
-  }
-}
-
-
-/* =================== PROJECTION =================== */
-function computeProjectionFromSTATE() {
-  const r  = (STATE.retPct||0)/100;
-  const dy = (STATE.divPct||0)/100;
-  const hz = Number.isFinite(STATE.horizon) && STATE.horizon>0 ? STATE.horizon : 5;
-
-  let st = STATE.stocks||0;
-  const pr = (STATE.props||[]).reduce((s,v)=>s+(v||0),0);
-  const cs = (STATE.cash||0) + (STATE.ef||0);
-
-  const liConst = (STATE.mortTot||0) + (STATE.carTot||0) + (STATE.othTot||0);
-
-  const rows=[], labels=[], netSeries=[];
-  for (let i=1;i<=hz;i++){
-    const y = YEAR0 + i - 1;
-    const add = ((y<=STATE.semiUntil)? 2*(STATE.semi||0) : 0) + (STATE.monthly||0)*12;
-    st += add;
-    const dividends = st * dy;
-    st *= (1 + r);
-
-    const li = liConst;
-    const totalAssets = st + pr + cs;
-    const nw = totalAssets - li;
-
-    rows.push({y, st:Math.round(st), divs:Math.round(dividends), pr:Math.round(pr), cs:Math.round(cs), li:Math.round(li), nw:Math.round(nw)});
-    labels.push(String(y)); netSeries.push(nw);
-  }
-  return { rows, labels, netSeries, pr, liConst };
-}
-
-function renderProjection({rows, labels, netSeries, pr, liConst}) {
-  $("#hzOut") && ($("#hzOut").textContent = (STATE.horizon||5) + "y");
-
-  // Table body (last year first)
-  const tb = $("#projTable tbody"); tb.innerHTML = "";
-  rows.slice().reverse().forEach(r=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML = `<td>${r.y}</td><td>${fmt(r.st)}</td><td>${fmt(r.divs)}</td>
-                    <td>${fmt(r.pr)}</td><td>${fmt(r.cs)}</td><td>${fmt(r.li)}</td>
-                    <td><strong>${fmt(r.nw)}</strong></td>`;
-    tb.appendChild(tr);
-  });
-
-  // Line chart
-  drawLine($("#chart"), labels, netSeries);
-
-  // Pies (current composition based on inputs, not future)
-  const assetsNow = (STATE.stocks||0) + (STATE.cash||0) + (STATE.ef||0) + (STATE.props||[]).reduce((s,v)=>s+(v||0),0);
-  const stocksNow = STATE.stocks||0;
-  const propsNow  = (STATE.props||[]).reduce((s,v)=>s+(v||0),0);
-  const cashEfNow = (STATE.cash||0) + (STATE.ef||0);
-
-  drawPie(
-    $("#pieAssets"),
-    [stocksNow, propsNow, cashEfNow],
-    ["#2b6cff","#60a5fa","#a5b4fc"],
-    ["Stocks","Properties","Cash+EF"],
-    $("#legendAssets")
-  );
-
-  drawPie(
-    $("#pieLiabs"),
-    [STATE.mortTot||0, STATE.carTot||0, STATE.othTot||0],
-    ["#ef4444","#f59e0b","#10b981"],
-    ["Mortgage","Car Loan","Other Loans"],
-    $("#legendLiabs")
-  );
-
-  // Retirement snapshot
-  const projectedNet = rows.at(-1)?.nw ?? 0;
-  const swr = (STATE.swr||0)/100, spend = STATE.retSpend||0;
-  let propFactor=0; if(STATE.includeProp==="half") propFactor=.5; if(STATE.includeProp==="yes") propFactor=1;
-  const withdrawalBase = projectedNet - pr + pr*propFactor;
-  const swrIncome = withdrawalBase * swr;
-  const divIncome = withdrawalBase * 0.35 * ((STATE.divPct||0)/100);
-
-  $("#retProj").textContent = fmt(projectedNet);
-  $("#retBase").textContent = fmt(Math.round(withdrawalBase));
-  $("#retSWR").textContent  = fmt(Math.round(swrIncome));
-  $("#retDivs").textContent = fmt(Math.round(divIncome));
-
-  const ok = (swrIncome + divIncome) >= spend;
-  const cls = ok ? "ok" : ((swrIncome+divIncome)>0.8*spend ? "warn" : "bad");
-  const txt = ok ? "On track ✅" : ((swrIncome+divIncome)>0.8*spend ? "Close — needs tweaks ⚠️" : "Shortfall ⛔");
-  $("#retMsg").innerHTML = `Target spend: <strong>${fmt(spend)} AED/yr</strong> — <span class="${cls}"><strong>${txt}</strong></span>`;
-}
-
-/* =================== CALCULATE FLOW =================== */
-function calculateFromSTATE(){
-  toast("Calculating…");
-
-  // KPIs now
-  const assetsNow = (STATE.stocks||0) + (STATE.cash||0) + (STATE.ef||0) + (STATE.props||[]).reduce((s,v)=>s+(v||0),0);
-  const liab0 = (STATE.mortTot||0) + (STATE.carTot||0) + (STATE.othTot||0);
-  const netNow = assetsNow - liab0;
-  $("#assetsAED").textContent = fmt(assetsNow);
-  $("#liabOut").textContent   = fmt(liab0);
-  $("#nwAED").textContent     = fmt(netNow);
-
-  // Show which rates are used
-  $("#rateUsed").textContent = `${(+STATE.retPct||0).toFixed(1)}%`;
-  $("#divUsed").textContent  = `${(+STATE.divPct||0).toFixed(1)}%`;
-  $("#rateRes").value = (+STATE.retPct||0).toFixed(1);
-
-  // Projection render
-  const proj = computeProjectionFromSTATE();
-  renderProjection(proj);
-
-  // Sync horizon selector
-  fillHorizonOptions($("#hzRes"), STATE.horizon);
-  $("#horizon") && ($("#horizon").value = String(STATE.horizon));
-
-  // Show results
-  $("#results").style.display = "block";
-  $("#bar").style.width = "100%";
-  $("#results").scrollIntoView({behavior:"smooth", block:"start"});
-}
-
-/* =================== BOOT =================== */
-document.addEventListener("DOMContentLoaded", ()=>{
-  // steps
-  $$(".step").forEach(s=>steps.push(s));
-
-  // hydrate
-  hydrateStep1(); hydrateStep2(); hydrateStep3(); hydrateStep4();
-  fillHorizonOptions($("#hzRes"), STATE.horizon);
-
-  // assets
-  $("#addProp").addEventListener("click", ()=>{ $("#propList").appendChild(propRow(0)); });
-
-  // nav
-  $("#next1").addEventListener("click", ()=>{ collectStep1(); hideResults(); showStep(2); });
-  $("#next2").addEventListener("click", ()=>{ collectStep2(); hideResults(); showStep(3); });
-  $("#next3").addEventListener("click", ()=>{ collectStep3(); hideResults(); showStep(4); });
-  $$(".step [data-back]").forEach(b=> b.addEventListener("click", ()=>{ hideResults(); showStep(cur-1); }));
-
-  // calculate
-  $("#calc").addEventListener("click", ()=>{ collectStep4(); calculateFromSTATE(); });
-
-  // results controls
-  $("#hzRes").addEventListener("change", (e)=>{
-    const hz = parseInt(e.target.value, 10);
-    STATE.horizon = Number.isFinite(hz) && hz > 0 ? hz : 5;
-    renderProjection(computeProjectionFromSTATE());
-  });
-  $("#rateRes").addEventListener("change", (e)=>{
-    const r = parseFloat(e.target.value);
-    STATE.retPct = Number.isFinite(r) ? r : (STATE.retPct||0);
-    $("#rateUsed").textContent = `${(+STATE.retPct||0).toFixed(1)}%`;
-    renderProjection(computeProjectionFromSTATE());
-  });
-
-  // edit & reset
-  $("#editAgain").addEventListener("click", ()=>{ hideResults(); showStep(1); });
-  $("#reset").addEventListener("click", ()=>{
-    Object.assign(STATE, {
-      stocks:0, cash:0, ef:0, props:[],
-      mortTot:0, carTot:0, othTot:0,
-      monthly:0, semi:0, semiUntil:YEAR0, retPct:0, divPct:0, horizon:5,
-      retSpend:0, swr:0, includeProp:"no"
-    });
-    hydrateStep1(); hydrateStep2(); hydrateStep3(); hydrateStep4(); hideResults(); showStep(1); setProgress();
-  });
-
-  showStep(1); setProgress();
-});
-</script>
+    // Resize handling for crisp canvas
+    let raf; window.addEventListener('resize',()=>{ cancelAnimationFrame(raf); raf=requestAnimationFrame(recalc); });
+  </script>
 </body>
 </html>
