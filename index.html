@@ -36,21 +36,37 @@
     /* Sticky total */
     .totalbar{position:sticky;bottom:0;background:#fff;border:1px solid var(--ring);border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -6px 18px rgba(2,6,23,.05)}
 
-    /* Summary (hidden until data present) */
+    /* Summary */
+    .summary-head{display:flex;gap:8px;align-items:center;justify-content:space-between}
     .pill{border:1px solid var(--ring);padding:4px 8px;border-radius:999px;font-size:12px;font-weight:600}
     .pill.low{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
     .pill.balanced{background:#eff6ff;color:#1e3a8a;border-color:#bfdbfe}
     .pill.high{background:#fef2f2;color:#991b1b;border-color:#fecaca}
-    .summary-list{list-style:none;margin:8px 0 0 0;padding:0;display:grid;gap:8px}
+    .summary-list{list-style:none;margin:10px 0 0 0;padding:0;display:grid;gap:10px}
     .summary-list li{font-size:13px;color:#111827;line-height:1.35}
     .summary-list li .tag{font-size:11px;opacity:.7;margin-left:6px}
+    .inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    select.mini{border:1px solid var(--ring);border-radius:8px;padding:4px 8px;font-size:12px;background:#fff;color:#111827}
+    /* Summary layout tweaks */
+    #summaryCard{width:100%}
+    #nextMove{font-size:14px; line-height:1.4; padding:6px 0}
+    .summary-head h2{font-size:13px}
+    /* Summary layout tweaks */
+    #summaryCard{width:100%}
+    #nextMove{font-size:14px; line-height:1.4; padding:6px 0}
+    .summary-head h2{font-size:13px}
+    /* Inline Add + Total row */
+    .addbar{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+    .addbar-left{display:flex;align-items:center;gap:8px}
+    .totalright{display:flex;align-items:baseline;gap:8px}
+    .totalright .mono{font-weight:600}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
       <h1>Portfolio Concentration</h1>
-      <div class="muted">Enter amounts only (no %). The pie and total update automatically. Labels are outside with leader lines and basic collision-avoidance.</div>
+      <div class="muted">Enter amounts only (no %). Labels are outside with leader lines. Summary gives concrete next steps.</div>
     </header>
 
     <section class="card row">
@@ -67,30 +83,47 @@
             <tbody id="rows"></tbody>
           </table>
         </div>
-        <div style="display:flex; gap:8px; margin-top:10px; align-items:center;">
-          <button id="add" class="ghost-btn">+ Add Category</button>
-          <div id="note" class="muted"></div>
-        </div>
-      </div>
+        <div class="addbar">
+          <div class="addbar-left">
+            <button id="add" class="ghost-btn">+ Add Category</button>
+            <div id="note" class="muted"></div>
+          </div>
+          <div class="totalright">
+            <span class="muted">Total Portfolio</span>
+            <span class="mono" id="totalOut">0</span>
+          </div>
+        </div></div>
 
       <div class="chart-col">
-        <canvas id="pie" width="700" height="700" aria-label="Portfolio pie chart"></canvas>
+        <canvas id="pie" width="700" height="700" aria-label="Portfolio pie chart" style="display:none"></canvas>
 
-        <!-- Summary: hidden initially; appears once user adds any positive amounts -->
+        <!-- Summary: hidden until data present -->
         <div class="card" id="summaryCard" style="display:none">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <h2 style="margin:0;font-size:14px">Summary</h2>
-            <span id="riskPill" class="pill">—</span>
+          <div class="summary-head">
+            <div class="inline">
+              <h2 style="margin:0;font-size:14px">Summary</h2>
+              <span id="riskPill" class="pill">—</span>
+            </div>
+            <div class="inline">
+              <label for="policySelect" class="muted">Policy</label>
+              <select id="policySelect" class="mini">
+                <option value="balanced">Balanced</option>
+                <option value="conservative">Conservative</option>
+                <option value="growth">Growth</option>
+              </select>
+              <button id="detailsToggle" class="ghost-btn" style="padding:4px 8px;font-size:12px">Show details</button>
+            </div>
           </div>
-          <ul id="summaryList" class="summary-list"></ul>
+          <div id="nextMove" class="mono" style="margin-top:8px;color:#111827"></div>
+          <div id="contribBlock" style="margin-top:8px; display:none">
+            <div class="muted">New contributions (guide):</div>
+            <ul id="contribList" class="summary-list"></ul>
+          </div>
+          <ul id="summaryList" class="summary-list" style="display:none"></ul>
+          <div id="unclassified" class="summary-list" style="margin-top:6px; display:none"></div>
         </div>
       </div>
     </section>
-
-    <div class="totalbar">
-      <div class="muted">Total Portfolio</div>
-      <div class="mono" id="totalOut">0</div>
-    </div>
   </div>
 
   <script>
@@ -115,6 +148,33 @@
     const summaryCard = byId('summaryCard');
     const summaryList = byId('summaryList');
     const riskPill = byId('riskPill');
+    const unclassifiedEl = byId('unclassified');
+    const nextMoveEl = byId('nextMove');
+    const policySelect = byId('policySelect');
+    const contribBlock = byId('contribBlock');
+    const contribList = byId('contribList');
+    const detailsToggle = byId('detailsToggle');
+
+    // Reparent summary to full width & move details button after Next move
+    const sectionRow = document.querySelector('section.card.row');
+    if(summaryCard && sectionRow && summaryCard.parentElement !== sectionRow.parentElement){
+      sectionRow.insertAdjacentElement('afterend', summaryCard);
+    }
+    if(detailsToggle && nextMoveEl && detailsToggle.parentElement !== nextMoveEl.parentElement){
+      nextMoveEl.insertAdjacentElement('afterend', detailsToggle);
+    }
+
+    // Persisted classification overrides and policy
+    const LS_KEY_OVR = 'pc_class_overrides';
+    const LS_KEY_POLICY = 'pc_policy';
+    const LS_KEY_EXPANDED = 'pc_details_expanded';
+    let overrides = {};
+    try { overrides = JSON.parse(localStorage.getItem(LS_KEY_OVR)||'{}'); } catch(_) {}
+    const savedPolicy = localStorage.getItem(LS_KEY_POLICY) || 'balanced';
+    policySelect.value = savedPolicy;
+    let expanded = (localStorage.getItem(LS_KEY_EXPANDED) === '1');
+    function syncDetailsToggle(){ if(detailsToggle) detailsToggle.textContent = expanded ? 'Hide details' : 'Show details'; }
+    syncDetailsToggle();
 
     // --- Rows ---
     function newRow(category='', value=''){
@@ -151,14 +211,14 @@
       totalOut.textContent = moneyFmt(sum);
 
       if(sum<=0){
-        ctx.fillStyle = '#9ca3af';
-        ctx.font = `${Math.max(14,Math.min(W,H)*0.04)}px ui-sans-serif, system-ui`;
-        ctx.textAlign = 'center';
-        ctx.fillText('Add category amounts to see the pie', W/2, H/2);
+        pie.style.display='none';
         ctx.restore();
         if(summaryCard) summaryCard.style.display='none';
+        if(nextMoveEl) nextMoveEl.textContent='';
         return;
       }
+
+      pie.style.display='block';
 
       const pad = Math.min(W,H)*0.08;
       const cx = W/2, cy = H/2;
@@ -211,9 +271,8 @@
             arr[i].y = arr[i-1].y + minGap;
           }
         }
-        // also prevent labels from going too far beyond canvas
-        const topBound = cy - (radius + 60);
-        const botBound = cy + (radius + 60);
+        const topBound = cy - (radius + 70);
+        const botBound = cy + (radius + 70);
         if(arr.length){
           if(arr[0].y < topBound){
             const delta = topBound - arr[0].y;
@@ -238,19 +297,18 @@
         const textX = l.x + (alignRight ? -6 : 6);
         const textY = l.y;
 
-        // leader from arc edge to label point, with a small horizontal segment
         const arcPointX = cx + Math.cos(l.angle) * radius;
         const arcPointY = cy + Math.sin(l.angle) * radius;
         const midX = cx + Math.cos(l.angle) * (radius + 10);
         const midY = cy + Math.sin(l.angle) * (radius + 10);
-        const endX = textX + (alignRight ? 4 : -4); // small offset before text
+        const endX = textX + (alignRight ? 4 : -4);
 
         ctx.beginPath();
         ctx.moveTo(arcPointX, arcPointY);
         ctx.lineTo(midX, midY);
         ctx.lineTo(endX, textY);
         ctx.lineWidth = 1;
-        ctx.strokeStyle = leaderColor;
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
         ctx.stroke();
 
         ctx.fillText(l.text, textX, textY);
@@ -266,62 +324,207 @@
       ctx.restore();
     }
 
+    // --- Policy targets ---
+    function getTargets(policy){
+      // percentages that sum to 100
+      if(policy==='conservative') return {stocks:40,bonds:40,cash:15,real_estate:3,commodities:1,crypto:1,other:0};
+      if(policy==='growth') return {stocks:70,bonds:15,cash:7,real_estate:4,commodities:2,crypto:2,other:0};
+      return {stocks:55,bonds:25,cash:10,real_estate:5,commodities:3,crypto:2,other:0}; // balanced
+    }
+
     // --- Summary/advice logic ---
-    function classify(name){
+    function baseClassify(name){
       const n = name.toLowerCase();
-      if(/bond|fixed|income|treasury|t-bill/.test(n)) return 'bonds';
-      if(/stock|equit|etf|fund|voo|qqq|schd|s&p|nasdaq/.test(n)) return 'stocks';
+      if(/bond|fixed|income|treasury|t-bill|gilts|muni/.test(n)) return 'bonds';
+      if(/stock|equit|etf|fund|index|voo|qqq|schd|s&p|nasdaq|pe|private\s*equity|venture|angel|startup/.test(n)) return 'stocks';
       if(/real\s*estate|property|reit|house|apartment|land/.test(n)) return 'real_estate';
-      if(/cash|savings|deposit|money\s*market/.test(n)) return 'cash';
-      if(/crypto|bitcoin|btc|eth|sol|token/.test(n)) return 'crypto';
-      if(/gold|silver|metal|commodity|oil|energy/.test(n)) return 'commodities';
+      if(/cash|savings|deposit|money\s*market|t\s*-?bill|mmf/.test(n)) return 'cash';
+      if(/crypto|bitcoin|btc|eth|sol|token|defi/.test(n)) return 'crypto';
+      if(/gold|silver|metal|commodity|oil|energy|wti|brent/.test(n)) return 'commodities';
       return 'other';
+    }
+    function classify(name){
+      const key = name.toLowerCase();
+      if(overrides[key]) return overrides[key];
+      return baseClassify(name);
     }
 
     function analyze(model){
       const total = model.total || 0;
-      const buckets = {};
-      model.items.forEach(it=>{ const k = classify(it.name); buckets[k]=(buckets[k]||0)+it.amount; });
-      const pct = k => total>0 ? (buckets[k]||0)/total : 0;
-      const p = { stocks:pct('stocks'), bonds:pct('bonds'), cash:pct('cash'), real_estate:pct('real_estate'), crypto:pct('crypto'), commodities:pct('commodities'), other:pct('other') };
+      const buckets = {stocks:0,bonds:0,cash:0,real_estate:0,crypto:0,commodities:0,other:0};
+      const byBucket = {stocks:[],bonds:[],cash:[],real_estate:[],crypto:[],commodities:[],other:[]};
+      model.items.forEach(it=>{ const k = classify(it.name); buckets[k]+=it.amount; byBucket[k].push(it); });
 
+      const pct = k => total>0 ? (buckets[k]||0)/total : 0;
+      const p = Object.fromEntries(Object.keys(buckets).map(k=>[k,pct(k)]));
+
+      // Risk heuristic
       let risk = 'balanced';
       const growth = p.stocks + p.crypto + p.commodities*0.5;
       const defense = p.bonds + p.cash + p.real_estate*0.2;
       if(growth >= 0.7 || p.crypto >= 0.12) risk = 'high';
       else if(defense >= 0.45 || p.bonds >= 0.35) risk = 'low';
 
-      const out = [];
-      const add = (msg, tag='tip') => out.push({msg, tag});
+      return { total, buckets, p, byBucket, risk };
+    }
 
-      const totalItems = model.items.length;
-      if(totalItems){
-        const top = [...model.items].sort((a,b)=>b.amount-a.amount)[0];
-        if(top && total>0 && top.amount/total > 0.6) add('High concentration: "'+top.name+'" is '+(top.amount/total*100).toFixed(0)+'% of the portfolio.', 'concentration');
+    function buildActions(analysis, policy){
+      const targetsPct = getTargets(policy); // in %
+      const total = analysis.total;
+      const actions = [];
+
+      // deltas (percentage points) current minus target
+      const deltas = {};
+      for(const k in targetsPct){
+        const targetF = (targetsPct[k]||0)/100;
+        deltas[k] = (analysis.p[k]||0) - targetF;
       }
-      if(p.stocks > 0.7) add('Equities >70% → growth-tilted/volatile. Consider adding bonds or cash-like assets.', 'equities');
-      if(p.bonds < 0.1) add('Bonds <10% → weak downside protection. Build bonds/treasuries toward 15–30%.', 'bonds');
-      if(p.cash > 0.35) add('Cash >35% → return drag. Consider deploying into long-term targets or a T‑bill ladder.', 'cash');
-      if(p.real_estate > 0.5) add('Real estate >50% → liquidity risk. Balance with liquid funds.', 'real-estate');
-      if(p.crypto > 0.1) add('Crypto >10% → very volatile. Consider sizing to ≤5–10% unless high tolerance.', 'crypto');
-      if(totalItems < 4) add('Diversify across at least 4–6 categories to reduce idiosyncratic risk.', 'diversify');
 
-      return { risk, tips: out };
+      // overweight / underweight lists
+      const overweight = Object.keys(deltas).filter(k=>deltas[k]>0.001).sort((a,b)=>deltas[b]-deltas[a]);
+      const underweight = Object.keys(deltas).filter(k=>deltas[k]<-0.001).sort((a,b)=>deltas[a]-deltas[b]);
+
+      // concrete shift plan between existing buckets
+      let plan = null;
+      if(overweight.length && underweight.length){
+        const src = overweight[0], dst = underweight[0];
+        const moveFrac = Math.min(deltas[src], -deltas[dst]);
+        const moveAmt = Math.round(moveFrac * total);
+        plan = {src,dst,amount:moveAmt};
+      }
+
+      const tol = 0.03; // 3 percentage points tolerance
+      for(const k of Object.keys(deltas)){
+        const diff = deltas[k];
+        if(Math.abs(diff) < tol) continue;
+        const dir = diff>0 ? 'Reduce' : 'Increase';
+        const pp = Math.abs(diff*100).toFixed(1);
+        const amt = Math.round(Math.abs(diff) * total);
+        const target = targetsPct[k];
+        const msg = `${dir} ${labelFor(k)} by ${pp} pp (≈ ${moneyFmt(amt)}) to reach ${target}% target.`;
+        actions.push({msg, tag:'rebalance', k, dir, pp, amt});
+      }
+
+      // New contributions plan: allocate proportionally to deficits
+      const deficits = {};
+      let deficitSum = 0;
+      for(const k in targetsPct){
+        const targetF = (targetsPct[k]||0)/100;
+        const def = Math.max(0, targetF - (analysis.p[k]||0));
+        deficits[k] = def; deficitSum += def;
+      }
+      let contrib = [];
+      if(deficitSum > 0){
+        for(const k in deficits){
+          if(deficits[k] > 0){
+            const share = deficits[k] / deficitSum;
+            contrib.push({k, share});
+          }
+        }
+        contrib.sort((a,b)=>b.share - a.share);
+      }
+      const topDst = contrib.length ? contrib[0].k : (underweight[0] || null);
+
+      return {actions, plan, contrib, topDst, targetsPct};
+    }
+
+    function labelFor(k){
+      return k.replace('_',' ').replace(/\b\w/g, c=>c.toUpperCase());
     }
 
     function renderSummary(model){
       if(!summaryCard) return;
       if(!model.total){ summaryCard.style.display='none'; return; }
       summaryCard.style.display='block';
-      const adv = analyze(model);
-      riskPill.className = 'pill ' + adv.risk;
-      riskPill.textContent = adv.risk.charAt(0).toUpperCase() + adv.risk.slice(1);
+
+      const policy = policySelect.value;
+      const a = analyze(model);
+      riskPill.className = 'pill ' + a.risk;
+      riskPill.textContent = 'Risk: ' + (a.risk.charAt(0).toUpperCase() + a.risk.slice(1));
+      riskPill.title = 'Overall risk posture based on current mix';
+
+      const {actions, plan, contrib, topDst, targetsPct} = buildActions(a, policy);
+
+      // Next move only (always shown)
+      const parts = [];
+      if(plan){ parts.push(`shift ~ ${moneyFmt(plan.amount)} from ${labelFor(plan.src)} → ${labelFor(plan.dst)}`); }
+      if(topDst){ const tgt = targetsPct[topDst] ?? 0; parts.push(`direct new contributions to ${labelFor(topDst)} until ~${tgt}%`); }
+      if(parts.length===2){ nextMoveEl.textContent = `Next move: EITHER ${parts[0]} OR ${parts[1]}.`; }
+      else if(parts.length===1){ nextMoveEl.textContent = `Next move: ${parts[0]}.`; }
+      else { nextMoveEl.textContent = 'Next move: minor drift — rebalancing not urgent.'; }
+
+      // If collapsed: hide details and exit
+      if(!expanded){
+        if(summaryList){ summaryList.style.display='none'; summaryList.innerHTML=''; }
+        if(contribBlock){ contribBlock.style.display='none'; }
+        if(unclassifiedEl){ unclassifiedEl.style.display='none'; unclassifiedEl.innerHTML=''; }
+        return;
+      }
+
+      // Expanded: show details
+      if(summaryList) summaryList.style.display='grid';
+      if(unclassifiedEl) unclassifiedEl.style.display='grid';
+
+      // Action list
       summaryList.innerHTML='';
-      adv.tips.forEach(t=>{
+      if(actions.length===0){
         const li = document.createElement('li');
-        li.innerHTML = t.msg + ' <span class="tag">'+t.tag+'</span>';
+        li.textContent = 'You are within target bands. Maintain contributions and rebalance annually.';
         summaryList.appendChild(li);
-      });
+      } else {
+        actions.forEach(t=>{ const li=document.createElement('li'); li.innerHTML = t.msg + ' <span class="tag">'+t.tag+'</span>'; summaryList.appendChild(li); });
+      }
+
+      // Contributions guidance
+      if(contrib && contrib.length){
+        contribBlock.style.display = 'block';
+        contribList.innerHTML = '';
+        const guideAmt = Math.max(1000, Math.round(a.total * 0.05)); // suggest 5% of portfolio (min 1k)
+        const show = contrib.slice(0,5);
+        show.forEach(c=>{
+          const li = document.createElement('li');
+          const pct = (c.share*100).toFixed(c.share<0.1?1:0);
+          const amt = Math.round(c.share * guideAmt);
+          li.textContent = `${labelFor(c.k)} — ${pct}% of next contributions (≈ ${moneyFmt(amt)})`;
+          contribList.appendChild(li);
+        });
+        if(contrib.length > 5){
+          const rest = contrib.slice(5).reduce((s,c)=>s+c.share,0);
+          const li = document.createElement('li');
+          li.textContent = `Others — ${(rest*100).toFixed(0)}%`;
+          contribList.appendChild(li);
+        }
+      } else {
+        contribBlock.style.display = 'none';
+      }
+
+      // Unclassified categories with live classifier
+      const unknownItems = a.byBucket.other || [];
+      unclassifiedEl.innerHTML = '';
+      if(unknownItems.length){
+        const title = document.createElement('li');
+        title.innerHTML = '<strong>Classify new categories</strong> (choose the closest risk bucket)';
+        unclassifiedEl.appendChild(title);
+        unknownItems.forEach(it=>{
+          const li = document.createElement('li');
+          const key = it.name.toLowerCase();
+          const current = (overrides||{})[key] || 'other';
+          li.innerHTML = `
+            <div class="inline">
+              <span class="mono">${it.name}</span>
+              <select data-name="${it.name}" class="mini">
+                <option value="stocks" ${current==='stocks'?'selected':''}>Equities</option>
+                <option value="bonds" ${current==='bonds'?'selected':''}>Bonds</option>
+                <option value="cash" ${current==='cash'?'selected':''}>Cash</option>
+                <option value="real_estate" ${current==='real_estate'?'selected':''}>Real Estate</option>
+                <option value="commodities" ${current==='commodities'?'selected':''}>Commodities</option>
+                <option value="crypto" ${current==='crypto'?'selected':''}>Crypto</option>
+                <option value="other" ${current==='other'?'selected':''}>Other</option>
+              </select>
+            </div>`;
+          unclassifiedEl.appendChild(li);
+        });
+      }
     }
 
     function recalc(){ const m = getModel(); draw(m); renderSummary(m); }
@@ -338,6 +541,26 @@
       }
     });
 
+    // Handle classification changes & policy select & details toggle
+    unclassifiedEl.addEventListener('change', (e)=>{
+      const sel = e.target.closest('select');
+      if(!sel) return;
+      const name = sel.getAttribute('data-name');
+      if(!name) return;
+      overrides[name.toLowerCase()] = sel.value;
+      try { localStorage.setItem(LS_KEY_OVR, JSON.stringify(overrides)); } catch(_) {}
+      recalc();
+    });
+    policySelect.addEventListener('change', ()=>{ localStorage.setItem(LS_KEY_POLICY, policySelect.value); recalc(); });
+    if(detailsToggle){
+      detailsToggle.addEventListener('click', ()=>{
+        expanded = !expanded;
+        localStorage.setItem(LS_KEY_EXPANDED, expanded ? '1' : '0');
+        syncDetailsToggle();
+        renderSummary(getModel());
+      });
+    }
+
     // Init
     seed(); recalc();
 
@@ -346,11 +569,57 @@
 
     // --- Basic Tests (console) ---
     (function runTests(){
+      // parseAmount
       console.assert(parseAmount('10,000')===10000, 'parseAmount comma failed');
       console.assert(parseAmount('25000')===25000, 'parseAmount plain failed');
       console.assert(parseAmount('  ')===0, 'parseAmount blanks failed');
       console.assert(parseAmount('abc')===0, 'parseAmount non-numeric failed');
+      console.assert(parseAmount('-100')===0, 'parseAmount negative should be 0');
+
+      // targets sum to 100
+      const sumBal = Object.values(getTargets('balanced')).reduce((a,b)=>a+b,0);
+      const sumCons = Object.values(getTargets('conservative')).reduce((a,b)=>a+b,0);
+      const sumGrow = Object.values(getTargets('growth')).reduce((a,b)=>a+b,0);
+      console.assert(sumBal===100 && sumCons===100 && sumGrow===100, 'policy targets must sum to 100');
+
+      // analyze & buildActions
+      const demo = { total: 100000, items: [
+        {name:'Stocks',amount:60000},
+        {name:'Bonds',amount:15000},
+        {name:'Cash',amount:5000},
+        {name:'Real Estate',amount:15000},
+        {name:'Crypto',amount:5000}
+      ]};
+      const a = analyze(demo);
+      console.assert(a && a.total===100000, 'analyze total mismatch');
+      const b = buildActions(a,'balanced');
+      console.assert(b && Array.isArray(b.actions), 'buildActions should return actions');
+      console.assert('topDst' in b, 'buildActions should include topDst');
+
+      // draw safety on empty, and with many slices
       try { draw({total:0, items:[]}); } catch(e){ console.error('draw(empty) threw', e); }
+      try {
+        const many = { total: 100000, items: Array.from({length:10}, (_,i)=>({name:'Cat '+(i+1), amount: 10000})) };
+        draw(many);
+      } catch(e){ console.error('draw(many) threw', e); }
+
+      // renderSummary smoke test (uses demo data)
+      try { renderSummary({ total: demo.total, items: demo.items }); } catch(e){ console.error('renderSummary threw', e); }
+
+      // gating tests
+      try {
+        draw({total:0, items:[]});
+        console.assert(pie.style.display==='none', 'pie should be hidden when empty');
+        console.assert(summaryCard.style.display==='none', 'summary should be hidden when empty');
+        const m2 = { total: 100, items: [{name:'Stocks', amount:100}]};
+        draw(m2);
+        console.assert(pie.style.display==='block', 'pie should show when data present');
+        renderSummary(m2);
+        console.assert(summaryCard.style.display==='block', 'summary should show when data present');
+      } catch(e){ console.error('gating tests error', e); }
+
+      // IMPORTANT: restore real UI to initial hidden state after tests
+      try { recalc(); } catch(e){ console.error('restore state failed', e); }
     })();
   </script>
 </body>
