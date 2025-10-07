@@ -401,7 +401,7 @@
         const pp = Math.abs(diff*100).toFixed(1);
         const amt = Math.round(Math.abs(diff) * total);
         const target = targetsPct[k];
-        const msg = `${dir} ${labelFor(k)} by ${pp} pp (≈ ${moneyFmt(amt)}) to reach ${target}% target.`;
+        const msg = `${dir} ${labelFor(k)} by ${pp} pp to reach ${target}% target.`;
         actions.push({msg, tag:'rebalance', k, dir, pp, amt});
       }
 
@@ -485,7 +485,7 @@
           const li = document.createElement('li');
           const pct = (c.share*100).toFixed(c.share<0.1?1:0);
           const amt = Math.round(c.share * guideAmt);
-          li.textContent = `${labelFor(c.k)} — ${pct}% of next contributions (≈ ${moneyFmt(amt)})`;
+          li.textContent = `${labelFor(c.k)} — ${pct}% of next contributions`;
           contribList.appendChild(li);
         });
         if(contrib.length > 5){
