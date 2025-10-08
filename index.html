@@ -33,9 +33,6 @@
     .chart-col{display:grid;gap:12px}
     canvas{width:100%;height:420px;display:block}
 
-    /* Sticky total */
-    .totalbar{position:sticky;bottom:0;background:#fff;border:1px solid var(--ring);border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -6px 18px rgba(2,6,23,.05)}
-
     /* Summary */
     .summary-head{display:flex;gap:8px;align-items:center;justify-content:space-between}
     .pill{border:1px solid var(--ring);padding:4px 8px;border-radius:999px;font-size:12px;font-weight:600}
@@ -47,14 +44,12 @@
     .summary-list li .tag{font-size:11px;opacity:.7;margin-left:6px}
     .inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     select.mini{border:1px solid var(--ring);border-radius:8px;padding:4px 8px;font-size:12px;background:#fff;color:#111827}
+
     /* Summary layout tweaks */
     #summaryCard{width:100%}
     #nextMove{font-size:14px; line-height:1.4; padding:6px 0}
     .summary-head h2{font-size:13px}
-    /* Summary layout tweaks */
-    #summaryCard{width:100%}
-    #nextMove{font-size:14px; line-height:1.4; padding:6px 0}
-    .summary-head h2{font-size:13px}
+
     /* Inline Add + Total row */
     .addbar{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
     .addbar-left{display:flex;align-items:center;gap:8px}
@@ -92,38 +87,39 @@
             <span class="muted">Total Portfolio</span>
             <span class="mono" id="totalOut">0</span>
           </div>
-        </div></div>
+        </div>
+      </div>
 
       <div class="chart-col">
         <canvas id="pie" width="700" height="700" aria-label="Portfolio pie chart" style="display:none"></canvas>
-
-        <!-- Summary: hidden until data present -->
-        <div class="card" id="summaryCard" style="display:none">
-          <div class="summary-head">
-            <div class="inline">
-              <h2 style="margin:0;font-size:14px">Summary</h2>
-              <span id="riskPill" class="pill">—</span>
-            </div>
-            <div class="inline">
-              <label for="policySelect" class="muted">Policy</label>
-              <select id="policySelect" class="mini">
-                <option value="balanced">Balanced</option>
-                <option value="conservative">Conservative</option>
-                <option value="growth">Growth</option>
-              </select>
-              <button id="detailsToggle" class="ghost-btn" style="padding:4px 8px;font-size:12px">Show details</button>
-            </div>
-          </div>
-          <div id="nextMove" class="mono" style="margin-top:8px;color:#111827"></div>
-          <div id="contribBlock" style="margin-top:8px; display:none">
-            <div class="muted">New contributions (guide):</div>
-            <ul id="contribList" class="summary-list"></ul>
-          </div>
-          <ul id="summaryList" class="summary-list" style="display:none"></ul>
-          <div id="unclassified" class="summary-list" style="margin-top:6px; display:none"></div>
-        </div>
       </div>
     </section>
+
+    <!-- Summary: hidden until data present; moved to full width via JS -->
+    <div class="card" id="summaryCard" style="display:none">
+      <div class="summary-head">
+        <div class="inline">
+          <h2 style="margin:0;font-size:14px">Summary</h2>
+          <span id="riskPill" class="pill">—</span>
+        </div>
+        <div class="inline">
+          <label for="policySelect" class="muted">Policy</label>
+          <select id="policySelect" class="mini">
+            <option value="balanced">Balanced</option>
+            <option value="conservative">Conservative</option>
+            <option value="growth">Growth</option>
+          </select>
+          <button id="detailsToggle" class="ghost-btn" style="padding:4px 8px;font-size:12px">Show details</button>
+        </div>
+      </div>
+      <div id="nextMove" class="mono" style="margin-top:8px;color:#111827"></div>
+      <div id="contribBlock" style="margin-top:8px; display:none">
+        <div class="muted">New contributions (guide):</div>
+        <ul id="contribList" class="summary-list"></ul>
+      </div>
+      <ul id="summaryList" class="summary-list" style="display:none"></ul>
+      <div id="unclassified" class="summary-list" style="margin-top:6px; display:none"></div>
+    </div>
   </div>
 
   <script>
@@ -168,6 +164,7 @@
     const LS_KEY_OVR = 'pc_class_overrides';
     const LS_KEY_POLICY = 'pc_policy';
     const LS_KEY_EXPANDED = 'pc_details_expanded';
+    const LS_KEY_PORT = 'pc_portfolio_v1';
     let overrides = {};
     try { overrides = JSON.parse(localStorage.getItem(LS_KEY_OVR)||'{}'); } catch(_) {}
     const savedPolicy = localStorage.getItem(LS_KEY_POLICY) || 'balanced';
@@ -199,6 +196,26 @@
       return { total, items };
     }
 
+    // --- Persistence ---
+    function savePortfolio(model){
+      try {
+        const data = Array.isArray(model?.items) ? model.items : [];
+        localStorage.setItem(LS_KEY_PORT, JSON.stringify(data));
+      } catch(_) {}
+    }
+    function loadPortfolio(){
+      try {
+        const raw = localStorage.getItem(LS_KEY_PORT);
+        const data = raw ? JSON.parse(raw) : [];
+        if(Array.isArray(data) && data.length>0){
+          rowsEl.innerHTML='';
+          data.forEach(it=> newRow(it.name || '', String(it.amount || '')));
+          return true;
+        }
+      } catch(_) {}
+      return false;
+    }
+
     // --- Chart with outside labels & collision avoidance ---
     function draw(model){
       const ctx = pie.getContext('2d');
@@ -226,7 +243,6 @@
       const inner  = radius * 0.55;
 
       const dividerColor = 'rgba(255,255,255,0.95)';
-      const leaderColor  = 'rgba(0,0,0,0.45)';
       const labelColor   = '#111827';
 
       // --- First pass: draw slices and collect label targets
@@ -484,7 +500,6 @@
         show.forEach(c=>{
           const li = document.createElement('li');
           const pct = (c.share*100).toFixed(c.share<0.1?1:0);
-          const amt = Math.round(c.share * guideAmt);
           li.textContent = `${labelFor(c.k)} — ${pct}% of next contributions`;
           contribList.appendChild(li);
         });
@@ -527,7 +542,12 @@
       }
     }
 
-    function recalc(){ const m = getModel(); draw(m); renderSummary(m); }
+    function recalc(){
+      const m = getModel();
+      draw(m);
+      renderSummary(m);
+      savePortfolio(m);
+    }
 
     // --- Events ---
     addBtn.addEventListener('click', ()=>{ newRow('',''); recalc(); });
@@ -562,7 +582,8 @@
     }
 
     // Init
-    seed(); recalc();
+    if(!loadPortfolio()) { seed(); }
+    recalc();
 
     // Keep canvas crisp on resize
     let raf; window.addEventListener('resize', ()=>{ cancelAnimationFrame(raf); raf = requestAnimationFrame(recalc); });
@@ -617,6 +638,17 @@
         renderSummary(m2);
         console.assert(summaryCard.style.display==='block', 'summary should show when data present');
       } catch(e){ console.error('gating tests error', e); }
+
+      // persistence tests (non-destructive)
+      try {
+        const prev = localStorage.getItem(LS_KEY_PORT);
+        const probe = [{name:'Test Persist', amount:12345}];
+        localStorage.setItem(LS_KEY_PORT, JSON.stringify(probe));
+        const round = JSON.parse(localStorage.getItem(LS_KEY_PORT)||'[]');
+        console.assert(Array.isArray(round) && round[0] && round[0].amount===12345, 'portfolio save/load failed');
+        // restore
+        if(prev===null) localStorage.removeItem(LS_KEY_PORT); else localStorage.setItem(LS_KEY_PORT, prev);
+      } catch(e){ console.error('persistence test failed', e); }
 
       // IMPORTANT: restore real UI to initial hidden state after tests
       try { recalc(); } catch(e){ console.error('restore state failed', e); }
