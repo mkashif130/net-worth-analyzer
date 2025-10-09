@@ -3,122 +3,255 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Portfolio Concentration • Pie</title>
+  <title>Portfolio • Minimal</title>
   <style>
-    :root{ --bg:#ffffff; --ink:#0b1220; --muted:#6b7280; --ring:#e5e7eb; --accent:#2563eb; --radius:16px; }
+    :root{ --bg:#fff; --ink:#0b1220; --muted:#6b7280; --ring:#e5e7eb; --accent:#2563eb; --radius:14px; }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:var(--bg);color:var(--ink)}
-    .wrap{max-width:1000px;margin:24px auto;padding:12px;display:grid;gap:16px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    h1{font-size:18px;margin:0;letter-spacing:.2px;font-weight:700}
-    .card{background:#fff;border:1px solid var(--ring);border-radius:var(--radius);padding:14px;box-shadow:0 8px 24px rgba(2,6,23,.04)}
-    .row{display:grid;grid-template-columns:1fr;gap:16px}
-    @media(min-width:960px){.row{grid-template-columns:1.2fr 1fr}}
-    input[type=text]{width:100%;background:#ffffff;border:1px solid #d1d5db;color:var(--ink);border-radius:12px;padding:10px 12px;outline:none;transition:border-color .15s ease}
-    input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+    .wrap{max-width:1040px;margin:24px auto;padding:0 12px;display:grid;gap:14px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px}
+
+    /* Minimal surfaces */
+    .surface{border:1px solid var(--ring);border-radius:var(--radius);padding:12px}
+
+    /* Tabs */
+    .tabs{display:flex;gap:6px;border:1px solid var(--ring);border-radius:999px;padding:3px;background:#fff;align-self:flex-start}
+    .tabs button{border:none;background:transparent;padding:6px 10px;border-radius:999px;cursor:pointer;font-weight:600;font-size:12px;color:#111827}
+    .tabs button.active{background:#111827;color:#fff}
+
+    /* Inputs */
+    input[type=text], input[type=number]{width:100%;background:#fff;border:1px solid #d1d5db;color:var(--ink);border-radius:10px;padding:9px 10px;outline:none;transition:border-color .15s ease}
+    input:focus{border-color:var(--accent)}
     table{width:100%;border-collapse:collapse}
-    th,td{padding:10px 8px;text-align:left}
-    th{font-weight:600;color:#111827;font-size:12px;letter-spacing:.3px}
+    th,td{padding:8px 6px;text-align:left}
+    th{font-weight:600;color:#111827;font-size:11px;letter-spacing:.2px}
     tr{border-bottom:1px dashed #e5e7eb}
     tr:last-child{border-bottom:none}
     .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-    .ghost-btn{background:#ffffff;border:1px solid #d1d5db;color:#111827;border-radius:12px;padding:8px 10px;cursor:pointer;font-weight:600;font-size:13px}
-    .ghost-btn:hover{border-color:var(--accent);color:#0b1220}
+    .ghost-btn{background:#fff;border:1px solid #d1d5db;color:#111827;border-radius:10px;padding:7px 10px;cursor:pointer;font-weight:600;font-size:12px}
+    .ghost-btn:hover{border-color:var(--accent)}
     .icon-btn{background:transparent;border:none;color:#6b7280;cursor:pointer;padding:6px;border-radius:8px}
     .icon-btn:hover{background:#f3f4f6;color:#111827}
     .muted{color:var(--muted);font-size:12px}
 
+    /* Grid */
+    .row{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:960px){.row{grid-template-columns:1.2fr 1fr}}
+
     /* Chart */
-    .chart-col{display:grid;gap:12px}
     canvas{width:100%;height:420px;display:block}
 
-    /* Summary */
-    .summary-head{display:flex;gap:8px;align-items:center;justify-content:space-between}
-    .pill{border:1px solid var(--ring);padding:4px 8px;border-radius:999px;font-size:12px;font-weight:600}
+    /* Summary (ultra-minimal) */
+    #summaryCard{width:100%}
+    .pill{border:1px solid var(--ring);padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600}
     .pill.low{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
     .pill.balanced{background:#eff6ff;color:#1e3a8a;border-color:#bfdbfe}
     .pill.high{background:#fef2f2;color:#991b1b;border-color:#fecaca}
-    .summary-list{list-style:none;margin:10px 0 0 0;padding:0;display:grid;gap:10px}
-    .summary-list li{font-size:13px;color:#111827;line-height:1.35}
-    .summary-list li .tag{font-size:11px;opacity:.7;margin-left:6px}
-    .inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    select.mini{border:1px solid var(--ring);border-radius:8px;padding:4px 8px;font-size:12px;background:#fff;color:#111827}
+    #nextMove{font-size:13px}
+    .link{border:none;background:transparent;color:#2563eb;cursor:pointer;padding:0 2px;font-size:12px}
 
-    /* Summary layout tweaks */
-    #summaryCard{width:100%}
-    #nextMove{font-size:14px; line-height:1.4; padding:6px 0}
-    .summary-head h2{font-size:13px}
-
-    /* Inline Add + Total row */
-    .addbar{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+    /* Inline Add + Total */
+    .addbar{display:flex;align-items:center;justify-content:space-between}
     .addbar-left{display:flex;align-items:center;gap:8px}
-    .totalright{display:flex;align-items:baseline;gap:8px}
+    .totalright{display:flex;align-items:baseline;gap:6px}
     .totalright .mono{font-weight:600}
+
+    /* Planner */
+    .grid2{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:960px){.grid2{grid-template-columns:1fr 1fr}}
+    .badge{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid var(--ring)}
+    .badge.ok{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
+    .badge.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
+    .badge.err{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+    .grade{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid var(--ring)}
+    .grade.good{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
+    .grade.bad{background:#fffbeb;color:#92400e;border-color:#fde68a}
+    .grade.ugly{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+
+    /* Gauges (target vs split) */
+    #gaugeWrap{display:grid;gap:10px;width:100%}
+    .gauge-row{display:grid;grid-template-columns:70px 1fr 60px;gap:8px;align-items:center}
+    .gauge-label{font-size:12px;color:#111827;font-weight:600}
+    .gauge-bar{position:relative;height:12px;border-radius:999px;background:#f3f4f6;overflow:hidden;border:1px solid #e5e7eb}
+    .gauge-fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
+    .gauge-band{position:relative;top:0;bottom:0;background:rgba(37,99,235,.12)}
+    .gauge-over{position:absolute;top:0;bottom:0;background:rgba(220,38,38,.35)}
+    .gauge-gap{position:absolute;top:0;bottom:0;background:rgba(245,158,11,.35)}
+    .gauge-pct{font-size:12px; text-align:right; font-variant-numeric:tabular-nums}
+    .needs{background:#3b82f6}
+    .wants{background:#60a5fa}
+    .saving{background:#10b981}
+    .warn-text{color:#991b1b}
+
+    /* Leak analyzer */
+    #leakCard .hint{font-size:12px;color:#6b7280}
+    #leakResults{display:none;margin-top:8px}
+    #leakTable{width:100%;border-collapse:collapse;margin-top:6px}
+    #leakTable th,#leakTable td{padding:6px;border-bottom:1px dashed #e5e7eb;font-size:12px}
+    .rules{margin-top:8px;border-top:1px dashed var(--ring);padding-top:8px}
+    .rules .row{display:grid;grid-template-columns:1fr 160px 80px;gap:8px;align-items:center}
+    .badge.cat{background:#f3f4f6;border-color:#e5e7eb;color:#111827}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>Portfolio Concentration</h1>
-      <div class="muted">Enter amounts only (no %). Labels are outside with leader lines. Summary gives concrete next steps.</div>
+      <h1>Wealth • Minimal</h1>
+      <div class="tabs">
+        <button class="active" data-tab="portfolio">Portfolio</button>
+        <button data-tab="planner">Planner</button>
+      </div>
     </header>
 
-    <section class="card row">
-      <div class="left">
-        <div class="card" style="padding:0; border-radius:12px;">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:60%">Category</th>
-                <th style="width:30%">Amount</th>
-                <th style="width:10%"></th>
-              </tr>
-            </thead>
-            <tbody id="rows"></tbody>
-          </table>
-        </div>
-        <div class="addbar">
-          <div class="addbar-left">
-            <button id="add" class="ghost-btn">+ Add Category</button>
-            <div id="note" class="muted"></div>
+    <!-- Portfolio view -->
+    <div id="view-portfolio" class="view">
+      <section class="surface row">
+        <div>
+          <div class="surface" style="padding:0; border-radius:10px;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:60%">Category</th>
+                  <th style="width:30%">Amount</th>
+                  <th style="width:10%"></th>
+                </tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
           </div>
-          <div class="totalright">
-            <span class="muted">Total Portfolio</span>
-            <span class="mono" id="totalOut">0</span>
+          <div class="addbar" style="margin-top:8px">
+            <div class="addbar-left">
+              <button id="add" class="ghost-btn">+ Add Category</button>
+              <div id="note" class="muted"></div>
+            </div>
+            <div class="totalright">
+              <span class="muted">Total</span>
+              <span class="mono" id="totalOut">0</span>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div class="chart-col">
-        <canvas id="pie" width="700" height="700" aria-label="Portfolio pie chart" style="display:none"></canvas>
-      </div>
-    </section>
-
-    <!-- Summary: hidden until data present; moved to full width via JS -->
-    <div class="card" id="summaryCard" style="display:none">
-      <div class="summary-head">
-        <div class="inline">
-          <h2 style="margin:0;font-size:14px">Summary</h2>
-          <span id="riskPill" class="pill">—</span>
+        <div>
+          <canvas id="pie" width="700" height="700" aria-label="Portfolio pie chart" style="display:none"></canvas>
         </div>
-        <div class="inline">
-          <label for="policySelect" class="muted">Policy</label>
-          <select id="policySelect" class="mini">
-            <option value="balanced">Balanced</option>
-            <option value="conservative">Conservative</option>
-            <option value="growth">Growth</option>
-          </select>
-          <button id="detailsToggle" class="ghost-btn" style="padding:4px 8px;font-size:12px">Show details</button>
+      </section>
+
+      <section class="surface" id="summaryCard" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="riskPill" class="pill">—</span>
+            <span class="muted">Policy</span>
+            <select id="policySelect" style="border:1px solid var(--ring);border-radius:8px;padding:4px 8px;font-size:12px;background:#fff;color:#111827">
+              <option value="balanced">Balanced</option>
+              <option value="conservative">Conservative</option>
+              <option value="growth">Growth</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <span id="nextMove" class="mono"></span>
+            <button id="detailsToggle" class="link">Show details</button>
+          </div>
         </div>
-      </div>
-      <div id="nextMove" class="mono" style="margin-top:8px;color:#111827"></div>
-      <div id="contribBlock" style="margin-top:8px; display:none">
-        <div class="muted">New contributions (guide):</div>
-        <ul id="contribList" class="summary-list"></ul>
-      </div>
-      <ul id="summaryList" class="summary-list" style="display:none"></ul>
-      <div id="unclassified" class="summary-list" style="margin-top:6px; display:none"></div>
+        <ul id="summaryList" class="summary-list" style="display:none; margin-top:8px"></ul>
+        <div id="contribBlock" style="display:none; margin-top:8px">
+          <div class="muted">New contributions (guide)</div>
+          <ul id="contribList" class="summary-list"></ul>
+        </div>
+        <ul id="unclassified" class="summary-list" style="display:none; margin-top:6px"></ul>
+      </section>
+    </div>
+
+    <!-- Planner view (hidden behind tab) -->
+    <div id="view-planner" class="view" style="display:none">
+      <section class="surface" id="plannerCard">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span id="ruleBadge" class="badge">50/30/20 —</span>
+            <span class="muted">Policy</span>
+            <select id="policySelect2" style="border:1px solid var(--ring);border-radius:8px;padding:4px 8px;font-size:12px;background:#fff;color:#111827">
+              <option value="balanced">Balanced</option>
+              <option value="conservative">Conservative</option>
+              <option value="growth">Growth</option>
+            </select>
+            <span id="spendBadge" class="grade">Spending —</span>
+          </div>
+          <div class="muted" id="pl_leftover_note"></div>
+        </div>
+
+        <div class="grid2" style="margin-top:8px">
+          <div class="surface">
+            <table style="width:100%">
+              <tbody>
+                <tr><td>Monthly take-home</td><td><input id="pl_salary" type="number" class="mono" min="0" step="100" placeholder="62000"/></td></tr>
+                <tr><td>Needs (incl. all debt payments)</td><td><input id="pl_needs" type="number" class="mono" min="0" step="50" placeholder="rent, utilities, debt ..."/></td></tr>
+                <tr><td>Wants (discretionary)</td><td><input id="pl_wants" type="number" class="mono" min="0" step="50" placeholder="dining, fun..."/></td></tr>
+                <tr><td>Saving (auto)</td><td><input id="pl_save_auto" type="number" class="mono" min="0" step="50" value="0" readonly/></td></tr>
+                <tr><td>Emergency Fund (you have)</td><td><input id="pl_ef_amt" type="number" class="mono" min="0" step="100" placeholder="cash reserve amount"/></td></tr>
+                <tr><td colspan="2" class="muted">Recommended EF = <span id="efRec" class="mono">—</span> (3 × Needs)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="surface" id="gaugeCard">
+            <div id="gaugeWrap"></div>
+            <div class="muted" id="ruleNote" style="margin-top:6px">Shaded band shows target range. Red = over the band, Amber = below (saving gap).</div>
+            <!-- keep canvas (hidden) to avoid breaking any code paths -->
+            <canvas id="rulePie" width="1" height="1" style="display:none"></canvas>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
+          <span id="plannerNext" class="mono"></span>
+          <button id="plannerDetailsToggle" class="link">Show details</button>
+        </div>
+        <div id="plannerDetails" style="display:none;margin-top:8px">
+          <ul id="plannerList" class="summary-list"></ul>
+        </div>
+
+        <!-- Leak analyzer CTA + results -->
+        <section class="surface" id="leakCard" style="margin-top:10px; display:none">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap">
+            <div>
+              <strong>Spending Analyzer</strong>
+              <div class="hint">Upload bank statement. Start with <strong>Emirates NBD</strong>. If your file is XLSX, export to CSV first (File → Save As → CSV). We detect Date, Description, and Amount/Debit/Credit.</div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center">
+              <input type="file" id="csvInput" accept=".csv,.xlsx" style="display:none"/>
+              <button id="pickCsv" class="ghost-btn">Upload Statement</button>
+            </div>
+          </div>
+          <div id="leakResults">
+            <canvas id="leakPie" width="700" height="420" aria-label="Spending by category"></canvas>
+            <table id="leakTable"></table>
+            <div class="rules">
+              <details>
+                <summary class="muted">Auto-categorization rules (optional)</summary>
+                <div class="row" style="margin-top:6px">
+                  <input id="ruleKeyword" type="text" placeholder="merchant keyword e.g., ADNOC"/>
+                  <select id="ruleCategory">
+                    <option>Groceries</option>
+                    <option>Fuel</option>
+                    <option>Dining & Coffee</option>
+                    <option>Transport</option>
+                    <option>Shopping</option>
+                    <option>Entertainment</option>
+                    <option>Kids Education</option>
+                    <option>Health & Insurance</option>
+                    <option>Housing & Utilities</option>
+                    <option>Travel</option>
+                    <option>Fees & Charges</option>
+                    <option>Traffic Fines</option>
+                    <option>Transfers/Income</option>
+                    <option>Other</option>
+                  </select>
+                  <button id="addRule" class="ghost-btn">Add rule</button>
+                </div>
+                <div id="ruleList" style="margin-top:6px"></div>
+              </details>
+            </div>
+          </div>
+        </section>
+      </section>
     </div>
   </div>
 
@@ -127,15 +260,17 @@
     const byId = (id) => document.getElementById(id);
     const fmt = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
     const moneyFmt = (n) => (isFinite(n) ? fmt.format(n) : "—");
-    const parseAmount = (str) => {
-      if (typeof str !== 'string') return 0;
-      const clean = str.replace(/[\,\s]/g,'');
-      const num = Number(clean);
-      return isFinite(num) && num > 0 ? num : 0;
-    };
+    const parseAmount = (str) => { if (typeof str !== 'string') return 0; const clean = str.replace(/[\,\sA-Z_a-zAED$€£₹]/g,''); const num = Number(clean); return isFinite(num) ? num : 0; };
+    const num = (v)=>{ const n = Number(v); return isFinite(n)?n:0; };
     const hsl = (i,n)=>`hsl(${(i*360/Math.max(1,n))%360} 70% 50%)`;
 
-    // --- Elements ---
+    // --- Tabs ---
+    const tabBtns = [...document.querySelectorAll('.tabs button')];
+    const views = { portfolio: byId('view-portfolio'), planner: byId('view-planner') };
+    const LS_KEY_TAB = 'pc_tab';
+    function showTab(t){ Object.keys(views).forEach(k=>{ views[k].style.display = (k===t)?'block':'none'; }); tabBtns.forEach(b=>b.classList.toggle('active', b.dataset.tab===t)); localStorage.setItem(LS_KEY_TAB, t); }
+
+    // --- Elements (Portfolio) ---
     const rowsEl = byId('rows');
     const addBtn = byId('add');
     const noteEl = byId('note');
@@ -151,29 +286,56 @@
     const contribList = byId('contribList');
     const detailsToggle = byId('detailsToggle');
 
-    // Reparent summary to full width & move details button after Next move
-    const sectionRow = document.querySelector('section.card.row');
-    if(summaryCard && sectionRow && summaryCard.parentElement !== sectionRow.parentElement){
-      sectionRow.insertAdjacentElement('afterend', summaryCard);
-    }
-    if(detailsToggle && nextMoveEl && detailsToggle.parentElement !== nextMoveEl.parentElement){
-      nextMoveEl.insertAdjacentElement('afterend', detailsToggle);
-    }
+    // Planner elements
+    const policySelect2 = byId('policySelect2');
+    const ruleBadge = byId('ruleBadge');
+    const spendBadge = byId('spendBadge');
+    const pl_salary = byId('pl_salary');
+    const pl_needs = byId('pl_needs');
+    const pl_wants = byId('pl_wants');
+    const pl_save_auto = byId('pl_save_auto');
+    const pl_ef_amt = byId('pl_ef_amt');
+    const efRec = byId('efRec');
+    const pl_leftover_note = byId('pl_leftover_note');
+    const plannerNext = byId('plannerNext');
+    const plannerDetails = byId('plannerDetails');
+    const plannerDetailsToggle = byId('plannerDetailsToggle');
+    const ruleNote = byId('ruleNote');
+    const gaugeWrap = byId('gaugeWrap');
 
-    // Persisted classification overrides and policy
+    // Leak analyzer elements
+    const leakCard = byId('leakCard');
+    const pickCsvBtn = byId('pickCsv');
+    const csvInput = byId('csvInput');
+    const leakResults = byId('leakResults');
+    const leakPie = byId('leakPie');
+    const leakTable = byId('leakTable');
+
+    // Rules UI
+    const ruleKeyword = byId('ruleKeyword');
+    const ruleCategory = byId('ruleCategory');
+    const addRuleBtn = byId('addRule');
+    const ruleList = byId('ruleList');
+
+    // Persisted keys
     const LS_KEY_OVR = 'pc_class_overrides';
     const LS_KEY_POLICY = 'pc_policy';
     const LS_KEY_EXPANDED = 'pc_details_expanded';
     const LS_KEY_PORT = 'pc_portfolio_v1';
-    let overrides = {};
-    try { overrides = JSON.parse(localStorage.getItem(LS_KEY_OVR)||'{}'); } catch(_) {}
-    const savedPolicy = localStorage.getItem(LS_KEY_POLICY) || 'balanced';
-    policySelect.value = savedPolicy;
-    let expanded = (localStorage.getItem(LS_KEY_EXPANDED) === '1');
-    function syncDetailsToggle(){ if(detailsToggle) detailsToggle.textContent = expanded ? 'Hide details' : 'Show details'; }
-    syncDetailsToggle();
+    const LS_KEY_PLAN = 'pc_planner_v6';
+    const LS_KEY_RULES = 'pc_txn_rules_v2';
 
-    // --- Rows ---
+    // Restore state
+    let overrides = {}; try { overrides = JSON.parse(localStorage.getItem(LS_KEY_OVR)||'{}'); } catch(_) {}
+    const savedPolicy = localStorage.getItem(LS_KEY_POLICY) || 'balanced';
+    const savedTab = localStorage.getItem(LS_KEY_TAB) || 'portfolio';
+    let expanded = (localStorage.getItem(LS_KEY_EXPANDED) === '1');
+    let rules = []; try { rules = JSON.parse(localStorage.getItem(LS_KEY_RULES)||'[]'); if(!Array.isArray(rules)) rules=[]; } catch(_) {}
+
+    // Apply saved
+    function applySaved(){ policySelect.value = savedPolicy; policySelect2.value = savedPolicy; showTab(savedTab); renderRules(); }
+
+    // --- Portfolio Rows ---
     function newRow(category='', value=''){
       const tr=document.createElement('tr');
       tr.innerHTML=`
@@ -183,475 +345,383 @@
       rowsEl.appendChild(tr);
     }
     function seed(){ newRow('Stocks',''); newRow('Real Estate',''); newRow('Cash',''); newRow('Crypto',''); }
+    function getModel(){ const items=[]; [...rowsEl.querySelectorAll('tr')].forEach((tr,idx)=>{ const name = tr.querySelector('td:nth-child(1) input').value.trim() || `Category ${idx+1}`; const raw  = tr.querySelector('td:nth-child(2) input').value; const amount = parseAmount(raw); if(amount>0) items.push({name,amount}); }); const total = items.reduce((a,b)=>a+b.amount,0); return { total, items }; }
 
-    function getModel(){
-      const items=[];
-      [...rowsEl.querySelectorAll('tr')].forEach((tr,idx)=>{
-        const name = tr.querySelector('td:nth-child(1) input').value.trim() || `Category ${idx+1}`;
-        const raw  = tr.querySelector('td:nth-child(2) input').value;
-        const amount = parseAmount(raw);
-        if(amount>0) items.push({name,amount});
-      });
-      const total = items.reduce((a,b)=>a+b.amount,0);
-      return { total, items };
-    }
+    // --- Portfolio Persistence ---
+    function savePortfolio(model){ try { const data = Array.isArray(model?.items) ? model.items : []; localStorage.setItem(LS_KEY_PORT, JSON.stringify(data)); } catch(_) {} }
+    function loadPortfolio(){ try { const raw = localStorage.getItem(LS_KEY_PORT); const data = raw ? JSON.parse(raw) : []; if(Array.isArray(data) && data.length>0){ rowsEl.innerHTML=''; data.forEach(it=> newRow(it.name || '', String(it.amount || ''))); return true; } } catch(_) {} return false; }
 
-    // --- Persistence ---
-    function savePortfolio(model){
-      try {
-        const data = Array.isArray(model?.items) ? model.items : [];
-        localStorage.setItem(LS_KEY_PORT, JSON.stringify(data));
-      } catch(_) {}
-    }
-    function loadPortfolio(){
-      try {
-        const raw = localStorage.getItem(LS_KEY_PORT);
-        const data = raw ? JSON.parse(raw) : [];
-        if(Array.isArray(data) && data.length>0){
-          rowsEl.innerHTML='';
-          data.forEach(it=> newRow(it.name || '', String(it.amount || '')));
-          return true;
-        }
-      } catch(_) {}
-      return false;
-    }
-
-    // --- Chart with outside labels & collision avoidance ---
+    // --- Portfolio Pie Chart (clearer labels) ---
     function draw(model){
       const ctx = pie.getContext('2d');
       const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
       const W = pie.clientWidth * DPR, H = pie.clientHeight * DPR;
       if(pie.width!==W) pie.width=W; if(pie.height!==H) pie.height=H;
       ctx.clearRect(0,0,W,H); ctx.save();
-
-      const {items,total:sum} = model;
-      totalOut.textContent = moneyFmt(sum);
-
-      if(sum<=0){
-        pie.style.display='none';
-        ctx.restore();
-        if(summaryCard) summaryCard.style.display='none';
-        if(nextMoveEl) nextMoveEl.textContent='';
-        return;
-      }
-
+      const {items,total:sum} = model; totalOut.textContent = moneyFmt(sum);
+      if(sum<=0){ pie.style.display='none'; ctx.restore(); if(summaryCard) summaryCard.style.display='none'; return; }
       pie.style.display='block';
-
-      const pad = Math.min(W,H)*0.08;
-      const cx = W/2, cy = H/2;
-      const radius = Math.max(40, Math.min(W,H)*0.40 - pad);
-      const inner  = radius * 0.55;
-
-      const dividerColor = 'rgba(255,255,255,0.95)';
-      const labelColor   = '#111827';
-
-      // --- First pass: draw slices and collect label targets
-      let start = -Math.PI/2;
-      const labels = [];
+      const pad = Math.min(W,H)*0.08; const cx = W/2, cy = H/2; const radius = Math.max(40, Math.min(W,H)*0.40 - pad); const inner  = radius * 0.55;
+      const dividerColor = 'rgba(255,255,255,0.98)';
+      let start = -Math.PI/2; const labels = [];
       items.forEach((it,i)=>{
-        const frac = it.amount / sum;
-        const end = start + frac*Math.PI*2;
-
-        // slice (donut)
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, start, end);
-        ctx.arc(cx, cy, inner, end, start, true);
-        ctx.closePath();
-        ctx.fillStyle = hsl(i, items.length);
-        ctx.fill();
-
-        // divider
-        ctx.lineWidth = Math.max(1, Math.min(W,H)*0.004);
-        ctx.strokeStyle = dividerColor;
-        ctx.stroke();
-
-        // label anchor just outside arc
-        const mid = (start+end)/2;
-        const baseR = radius + 22; // where text baseline aims
-        const lx = cx + Math.cos(mid) * baseR;
-        const ly = cy + Math.sin(mid) * baseR;
-        const side = (mid>Math.PI/2 || mid<-Math.PI/2) ? 'left' : 'right';
-        const text = `${it.name} · ${(frac*100).toFixed(frac<0.1?1:0)}%`;
-        const angle = mid; // keep for sorting
-        labels.push({x:lx,y:ly,side,text,angle,frac});
-
-        start = end;
+        const frac = it.amount / sum; const end = start + frac*Math.PI*2; const color=hsl(i, items.length);
+        ctx.beginPath(); ctx.arc(cx, cy, radius, start, end); ctx.arc(cx, cy, inner, end, start, true); ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+        ctx.lineWidth = Math.max(1.5, Math.min(W,H)*0.005); ctx.strokeStyle = dividerColor; ctx.stroke();
+        const mid = (start+end)/2; const baseR = radius + 28; const lx = cx + Math.cos(mid) * baseR; const ly = cy + Math.sin(mid) * baseR; const side = (mid>Math.PI/2 || mid<-Math.PI/2) ? 'left' : 'right'; const text = `${it.name} · ${(frac*100).toFixed(frac<0.1?1:0)}%`;
+        labels.push({x:lx,y:ly,side,text,angle:mid,color}); start = end;
       });
-
-      // --- Second pass: simple collision avoidance per side ---
-      const minGap = Math.max(12, Math.min(W,H)*0.03); // minimum vertical gap between labels
-      function relax(side){
-        const arr = labels.filter(l=>l.side===side).sort((a,b)=>a.y-b.y);
-        for(let i=1;i<arr.length;i++){
-          if(arr[i].y - arr[i-1].y < minGap){
-            arr[i].y = arr[i-1].y + minGap;
-          }
-        }
-        const topBound = cy - (radius + 70);
-        const botBound = cy + (radius + 70);
-        if(arr.length){
-          if(arr[0].y < topBound){
-            const delta = topBound - arr[0].y;
-            for(const l of arr) l.y += delta;
-          }
-          if(arr[arr.length-1].y > botBound){
-            const delta = arr[arr.length-1].y - botBound;
-            for(const l of arr) l.y -= delta;
-          }
-        }
-      }
-      relax('left');
-      relax('right');
-
-      // --- Draw leaders and labels ---
-      ctx.font = `${Math.max(11,Math.min(W,H)*0.025)}px ui-sans-serif, system-ui`;
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = labelColor;
+      const minGap = Math.max(14, Math.min(W,H)*0.035);
+      function relax(side){ const arr = labels.filter(l=>l.side===side).sort((a,b)=>a.y-b.y); for(let i=1;i<arr.length;i++){ if(arr[i].y - arr[i-1].y < minGap){ arr[i].y = arr[i-1].y + minGap; } } }
+      relax('left'); relax('right');
+      ctx.font = `${Math.max(12,Math.min(W,H)*0.028)}px ui-sans-serif, system-ui`; ctx.textBaseline = 'middle'; ctx.fillStyle = '#111827';
       labels.forEach(l=>{
-        const alignRight = l.side==='left';
-        ctx.textAlign = alignRight ? 'right' : 'left';
-        const textX = l.x + (alignRight ? -6 : 6);
-        const textY = l.y;
-
-        const arcPointX = cx + Math.cos(l.angle) * radius;
-        const arcPointY = cy + Math.sin(l.angle) * radius;
-        const midX = cx + Math.cos(l.angle) * (radius + 10);
-        const midY = cy + Math.sin(l.angle) * (radius + 10);
-        const endX = textX + (alignRight ? 4 : -4);
-
-        ctx.beginPath();
-        ctx.moveTo(arcPointX, arcPointY);
-        ctx.lineTo(midX, midY);
-        ctx.lineTo(endX, textY);
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-        ctx.stroke();
-
-        ctx.fillText(l.text, textX, textY);
+        const alignRight = l.side==='left'; ctx.textAlign = alignRight ? 'right' : 'left';
+        const textX = l.x + (alignRight ? -10 : 10); const textY = l.y;
+        const arcPointX = cx + Math.cos(l.angle) * radius; const arcPointY = cy + Math.sin(l.angle) * radius; const midX = cx + Math.cos(l.angle) * (radius + 12); const midY = cy + Math.sin(l.angle) * (radius + 12); const endX = textX + (alignRight ? -6 : 6);
+        ctx.beginPath(); ctx.moveTo(arcPointX, arcPointY); ctx.lineTo(midX, midY); ctx.lineTo(endX, textY); ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.stroke();
+        const boxX = alignRight ? textX+6 : textX-14; const boxY = textY-5; ctx.fillStyle = l.color; ctx.fillRect(boxX, boxY, 8, 8);
+        ctx.fillStyle = '#111827'; ctx.fillText(l.text, textX, textY);
       });
-
-      // center total label
-      ctx.fillStyle = '#111827';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = `${Math.max(12,Math.min(W,H)*0.035)}px ui-sans-serif, system-ui`;
-      ctx.fillText(`Total ${moneyFmt(sum)}`, cx, cy);
-
+      ctx.fillStyle = '#111827'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${Math.max(12,Math.min(W,H)*0.035)}px ui-sans-serif, system-ui`; ctx.fillText(`Total ${moneyFmt(sum)}`, cx, cy);
       ctx.restore();
     }
 
     // --- Policy targets ---
-    function getTargets(policy){
-      // percentages that sum to 100
-      if(policy==='conservative') return {stocks:40,bonds:40,cash:15,real_estate:3,commodities:1,crypto:1,other:0};
-      if(policy==='growth') return {stocks:70,bonds:15,cash:7,real_estate:4,commodities:2,crypto:2,other:0};
-      return {stocks:55,bonds:25,cash:10,real_estate:5,commodities:3,crypto:2,other:0}; // balanced
+    function getTargets(policy){ if(policy==='conservative') return {stocks:40,bonds:40,cash:15,real_estate:3,commodities:1,crypto:1,other:0}; if(policy==='growth') return {stocks:70,bonds:15,cash:7,real_estate:4,commodities:2,crypto:2,other:0}; return {stocks:55,bonds:25,cash:10,real_estate:5,commodities:3,crypto:2,other:0}; }
+
+    // --- Summary/advice (Portfolio) ---
+    function baseClassify(nm){ const n = nm.toLowerCase(); if(/bond|fixed|income|treasury|t-bill|gilts|muni/.test(n)) return 'bonds'; if(/stock|equit|etf|fund|index|voo|qqq|schd|s&p|nasdaq|pe|private\s*equity|venture|angel|startup/.test(n)) return 'stocks'; if(/real\s*estate|property|reit|house|apartment|land/.test(n)) return 'real_estate'; if(/cash|savings|deposit|money\s*market|t\s*-?bill|mmf/.test(n)) return 'cash'; if(/crypto|bitcoin|btc|eth|sol|token|defi/.test(n)) return 'crypto'; if(/gold|silver|metal|commodity|oil|energy|wti|brent/.test(n)) return 'commodities'; return 'other'; }
+    function classify(name){ const key = name.toLowerCase(); if(overrides[key]) return overrides[key]; return baseClassify(name); }
+    function analyze(model){ const total = model.total || 0; const buckets = {stocks:0,bonds:0,cash:0,real_estate:0,crypto:0,commodities:0,other:0}; const byBucket = {stocks:[],bonds:[],cash:[],real_estate:[],crypto:[],commodities:[],other:[]}; model.items.forEach(it=>{ const k = classify(it.name); buckets[k]+=it.amount; byBucket[k].push(it); }); const pct = k => total>0 ? (buckets[k]||0)/total : 0; const p = Object.fromEntries(Object.keys(buckets).map(k=>[k,pct(k)])); let risk = 'balanced'; const growth = p.stocks + p.crypto + p.commodities*0.5; const defense = p.bonds + p.cash + p.real_estate*0.2; if(growth >= 0.7 || p.crypto >= 0.12) risk = 'high'; else if(defense >= 0.45 || p.bonds >= 0.35) risk = 'low'; return { total, buckets, p, byBucket, risk }; }
+    function buildActions(analysis, policy){ const targetsPct = getTargets(policy); const total = analysis.total; const actions = []; const deltas = {}; for(const k in targetsPct){ const t = (targetsPct[k]||0)/100; deltas[k] = (analysis.p[k]||0) - t; } const overweight = Object.keys(deltas).filter(k=>deltas[k]>0.001).sort((a,b)=>deltas[b]-deltas[a]); const underweight = Object.keys(deltas).filter(k=>deltas[k]<-0.001).sort((a,b)=>deltas[a]-deltas[b]); let plan = null; if(overweight.length && underweight.length){ const src = overweight[0], dst = underweight[0]; const moveFrac = Math.min(deltas[src], -deltas[dst]); const moveAmt = Math.round(moveFrac * total); plan = {src,dst,amount:moveAmt}; } const tol = 0.03; for(const k of Object.keys(deltas)){ const diff = deltas[k]; if(Math.abs(diff) < tol) continue; const dir = diff>0 ? 'Reduce' : 'Increase'; const pp = Math.abs(diff*100).toFixed(1); const target = targetsPct[k]; const msg = `${dir} ${labelFor(k)} by ${pp} pp to reach ${target}% target.`; actions.push({msg, tag:'rebalance', k, dir, pp}); } const deficits = {}; let deficitSum = 0; for(const k in targetsPct){ const t = (targetsPct[k]||0)/100; const def = Math.max(0, t - (analysis.p[k]||0)); deficits[k] = def; deficitSum += def; } let contrib = []; if(deficitSum > 0){ for(const k in deficits){ if(deficits[k] > 0){ const share = deficits[k] / deficitSum; contrib.push({k, share}); } } contrib.sort((a,b)=>b.share - a.share); } const topDst = contrib.length ? contrib[0].k : (underweight[0] || null); return {actions, plan, contrib, topDst, targetsPct}; }
+    function labelFor(k){ return k.replace('_',' ').replace(/\b\w/g, c=>c.toUpperCase()); }
+    function renderSummary(model){ if(!summaryCard) return; if(!model.total){ summaryCard.style.display='none'; return; } summaryCard.style.display='block'; const policy = policySelect.value; const a = analyze(model); riskPill.className = 'pill ' + a.risk; riskPill.textContent = a.risk.charAt(0).toUpperCase() + a.risk.slice(1); const {actions, plan, contrib, topDst, targetsPct} = buildActions(a, policy); const parts = []; if(plan){ parts.push(`shift ~ ${moneyFmt(plan.amount)} from ${labelFor(plan.src)} → ${labelFor(plan.dst)}`); } if(topDst){ const tgt = targetsPct[topDst] ?? 0; parts.push(`direct new contributions to ${labelFor(topDst)} until ~${tgt}%`); } if(parts.length===2){ nextMoveEl.textContent = `Next: EITHER ${parts[0]} OR ${parts[1]}.`; } else if(parts.length===1){ nextMoveEl.textContent = `Next: ${parts[0]}.`; } else { nextMoveEl.textContent = 'Next: minor drift — rebalancing not urgent.'; } if(!expanded){ summaryList.style.display='none'; summaryList.innerHTML=''; contribBlock.style.display='none'; unclassifiedEl.style.display='none'; unclassifiedEl.innerHTML=''; return; } summaryList.style.display='grid'; unclassifiedEl.style.display='grid'; summaryList.innerHTML=''; if(actions.length===0){ const li = document.createElement('li'); li.textContent = 'Within target bands. Maintain contributions; rebalance annually.'; summaryList.appendChild(li); } else { actions.forEach(t=>{ const li=document.createElement('li'); li.innerHTML = t.msg + ' <span class="muted">'+t.tag+'</span>'; summaryList.appendChild(li); }); } if(contrib && contrib.length){ contribBlock.style.display = 'block'; contribList.innerHTML = ''; const show = contrib.slice(0,5); show.forEach(c=>{ const li = document.createElement('li'); const pct = (c.share*100).toFixed(c.share<0.1?1:0); li.textContent = `${labelFor(c.k)} — ${pct}% of next contributions`; contribList.appendChild(li); }); if(contrib.length > 5){ const rest = contrib.slice(5).reduce((s,c)=>s+c.share,0); const li = document.createElement('li'); li.textContent = `Others — ${(rest*100).toFixed(0)}%`; contribList.appendChild(li); } } else { contribBlock.style.display = 'none'; } const unknownItems = a.byBucket.other || []; unclassifiedEl.innerHTML = ''; if(unknownItems.length){ const title = document.createElement('li'); title.innerHTML = '<strong>Classify new categories</strong>'; unclassifiedEl.appendChild(title); unknownItems.forEach(it=>{ const li = document.createElement('li'); const key = it.name.toLowerCase(); const current = (overrides||{})[key] || 'other'; li.innerHTML = `<div style="display:flex;gap:8px;align-items:center"><span class="mono">${it.name}</span><select data-name="${it.name}" style="border:1px solid var(--ring);border-radius:8px;padding:4px 8px;font-size:12px;background:#fff;color:#111827"><option value="stocks" ${current==='stocks'?'selected':''}>Equities</option><option value="bonds" ${current==='bonds'?'selected':''}>Bonds</option><option value="cash" ${current==='cash'?'selected':''}>Cash</option><option value="real_estate" ${current==='real_estate'?'selected':''}>Real Estate</option><option value="commodities" ${current==='commodities'?'selected':''}>Commodities</option><option value="crypto" ${current==='crypto'?'selected':''}>Crypto</option><option value="other" ${current==='other'?'selected':''}>Other</option></select></div>`; unclassifiedEl.appendChild(li); }); } }
+
+    // --- Planner (needs include debts; EF by amount; auto saving) ---
+    function getPlannerModel(){
+      const salary = num(pl_salary.value);
+      const needsFixed = num(pl_needs.value);
+      const wants = num(pl_wants.value);
+      const efAmt = num(pl_ef_amt.value);
+      return { salary, needsFixed, wants, efAmt };
+    }
+    function savePlanner(){ try { localStorage.setItem(LS_KEY_PLAN, JSON.stringify(getPlannerModel())); } catch(_) {} }
+    function loadPlanner(){ try { const raw = localStorage.getItem(LS_KEY_PLAN); if(!raw) return; const s = JSON.parse(raw); pl_salary.value = s.salary||''; pl_needs.value = s.needsFixed||s.needs||''; pl_wants.value = s.wants||''; pl_ef_amt.value = s.efAmt||''; } catch(_) {} }
+
+    function spendingGrade(sh){
+      const needsOver = sh.needs - 0.5; const wantsOver = sh.wants - 0.3; const savingUnder = 0.2 - sh.saving;
+      const bigMiss = (needsOver>0.10) || (wantsOver>0.10) || (savingUnder>0.10) || (sh.needs+sh.wants>1.02);
+      const good = (sh.needs<=0.5 && sh.wants<=0.3 && sh.saving>=0.2);
+      if(good) return {grade:'good', explain:'On target with 50/30/20'};
+      if(bigMiss) return {grade:'ugly', explain:'Significant miss vs 50/30/20'};
+      return {grade:'bad', explain:'Slightly off — adjust gradually'};
     }
 
-    // --- Summary/advice logic ---
-    function baseClassify(name){
-      const n = name.toLowerCase();
-      if(/bond|fixed|income|treasury|t-bill|gilts|muni/.test(n)) return 'bonds';
-      if(/stock|equit|etf|fund|index|voo|qqq|schd|s&p|nasdaq|pe|private\s*equity|venture|angel|startup/.test(n)) return 'stocks';
-      if(/real\s*estate|property|reit|house|apartment|land/.test(n)) return 'real_estate';
-      if(/cash|savings|deposit|money\s*market|t\s*-?bill|mmf/.test(n)) return 'cash';
-      if(/crypto|bitcoin|btc|eth|sol|token|defi/.test(n)) return 'crypto';
-      if(/gold|silver|metal|commodity|oil|energy|wti|brent/.test(n)) return 'commodities';
-      return 'other';
-    }
-    function classify(name){
-      const key = name.toLowerCase();
-      if(overrides[key]) return overrides[key];
-      return baseClassify(name);
+    function analyzePlanner(m){
+      const salary = m.salary||0;
+      const needs = Math.max(0, m.needsFixed);
+      const wants = Math.max(0, m.wants);
+      const leftover = salary - needs - wants; // can be negative
+      const saving = Math.max(0, leftover);
+      const shares = { needs: salary>0 ? needs/salary : 0, wants: salary>0 ? wants/salary : 0, saving: salary>0 ? saving/salary : 0 };
+      const efRecAmt = needs * 3; const efHave = Math.max(0, m.efAmt||0); const efGap = Math.max(0, efRecAmt - efHave);
+      return {shares, needs, wants, saving, leftover, efRecAmt, efHave, efGap, overspend: leftover<0, deficit: Math.max(0, -leftover)};
     }
 
-    function analyze(model){
-      const total = model.total || 0;
-      const buckets = {stocks:0,bonds:0,cash:0,real_estate:0,crypto:0,commodities:0,other:0};
-      const byBucket = {stocks:[],bonds:[],cash:[],real_estate:[],crypto:[],commodities:[],other:[]};
-      model.items.forEach(it=>{ const k = classify(it.name); buckets[k]+=it.amount; byBucket[k].push(it); });
-
-      const pct = k => total>0 ? (buckets[k]||0)/total : 0;
-      const p = Object.fromEntries(Object.keys(buckets).map(k=>[k,pct(k)]));
-
-      // Risk heuristic
-      let risk = 'balanced';
-      const growth = p.stocks + p.crypto + p.commodities*0.5;
-      const defense = p.bonds + p.cash + p.real_estate*0.2;
-      if(growth >= 0.7 || p.crypto >= 0.12) risk = 'high';
-      else if(defense >= 0.45 || p.bonds >= 0.35) risk = 'low';
-
-      return { total, buckets, p, byBucket, risk };
-    }
-
-    function buildActions(analysis, policy){
-      const targetsPct = getTargets(policy); // in %
-      const total = analysis.total;
-      const actions = [];
-
-      // deltas (percentage points) current minus target
-      const deltas = {};
-      for(const k in targetsPct){
-        const targetF = (targetsPct[k]||0)/100;
-        deltas[k] = (analysis.p[k]||0) - targetF;
-      }
-
-      // overweight / underweight lists
-      const overweight = Object.keys(deltas).filter(k=>deltas[k]>0.001).sort((a,b)=>deltas[b]-deltas[a]);
-      const underweight = Object.keys(deltas).filter(k=>deltas[k]<-0.001).sort((a,b)=>deltas[a]-deltas[b]);
-
-      // concrete shift plan between existing buckets
-      let plan = null;
-      if(overweight.length && underweight.length){
-        const src = overweight[0], dst = underweight[0];
-        const moveFrac = Math.min(deltas[src], -deltas[dst]);
-        const moveAmt = Math.round(moveFrac * total);
-        plan = {src,dst,amount:moveAmt};
-      }
-
-      const tol = 0.03; // 3 percentage points tolerance
-      for(const k of Object.keys(deltas)){
-        const diff = deltas[k];
-        if(Math.abs(diff) < tol) continue;
-        const dir = diff>0 ? 'Reduce' : 'Increase';
-        const pp = Math.abs(diff*100).toFixed(1);
-        const amt = Math.round(Math.abs(diff) * total);
-        const target = targetsPct[k];
-        const msg = `${dir} ${labelFor(k)} by ${pp} pp to reach ${target}% target.`;
-        actions.push({msg, tag:'rebalance', k, dir, pp, amt});
-      }
-
-      // New contributions plan: allocate proportionally to deficits
-      const deficits = {};
-      let deficitSum = 0;
-      for(const k in targetsPct){
-        const targetF = (targetsPct[k]||0)/100;
-        const def = Math.max(0, targetF - (analysis.p[k]||0));
-        deficits[k] = def; deficitSum += def;
-      }
-      let contrib = [];
-      if(deficitSum > 0){
-        for(const k in deficits){
-          if(deficits[k] > 0){
-            const share = deficits[k] / deficitSum;
-            contrib.push({k, share});
-          }
+    // --- Target vs Split Gauges (DOM) ---
+    function renderGauges(shares){
+      const rows = [
+        { key:'needs', label:'Needs', target:0.5, cls:'needs' },
+        { key:'wants', label:'Wants', target:0.3, cls:'wants' },
+        { key:'saving', label:'Saving', target:0.2, cls:'saving' }
+      ];
+      const pct = (v)=>Math.round((v||0)*100);
+      gaugeWrap.innerHTML = '';
+      rows.forEach(r=>{
+        const row = document.createElement('div'); row.className='gauge-row';
+        const label = document.createElement('div'); label.className='gauge-label'; label.textContent = r.label;
+        const bar = document.createElement('div'); bar.className='gauge-bar';
+        const band = document.createElement('div'); band.className='gauge-band';
+        const tL = Math.max(0, r.target - 0.05); const tW = Math.min(1, r.target + 0.05) - tL;
+        band.style.left = (tL*100)+'%'; band.style.width = (tW*100)+'%';
+        const fill = document.createElement('div'); fill.className = `gauge-fill ${r.cls}`; const val = Math.min(1, Math.max(0, shares[r.key]||0)); fill.style.width = (val*100) + '%';
+        bar.appendChild(band); bar.appendChild(fill);
+        if(r.key!=='saving'){
+          const over = Math.max(0, val - r.target);
+          if(over>0){ const overEl = document.createElement('div'); overEl.className='gauge-over'; overEl.style.left=(r.target*100)+'%'; overEl.style.width=(over*100)+'%'; bar.appendChild(overEl); }
+        } else {
+          const gap = Math.max(0, r.target - val);
+          if(gap>0){ const gapEl = document.createElement('div'); gapEl.className='gauge-gap'; gapEl.style.left=(val*100)+'%'; gapEl.style.width=(gap*100)+'%'; bar.appendChild(gapEl); }
         }
-        contrib.sort((a,b)=>b.share - a.share);
-      }
-      const topDst = contrib.length ? contrib[0].k : (underweight[0] || null);
-
-      return {actions, plan, contrib, topDst, targetsPct};
-    }
-
-    function labelFor(k){
-      return k.replace('_',' ').replace(/\b\w/g, c=>c.toUpperCase());
-    }
-
-    function renderSummary(model){
-      if(!summaryCard) return;
-      if(!model.total){ summaryCard.style.display='none'; return; }
-      summaryCard.style.display='block';
-
-      const policy = policySelect.value;
-      const a = analyze(model);
-      riskPill.className = 'pill ' + a.risk;
-      riskPill.textContent = 'Risk: ' + (a.risk.charAt(0).toUpperCase() + a.risk.slice(1));
-      riskPill.title = 'Overall risk posture based on current mix';
-
-      const {actions, plan, contrib, topDst, targetsPct} = buildActions(a, policy);
-
-      // Next move only (always shown)
-      const parts = [];
-      if(plan){ parts.push(`shift ~ ${moneyFmt(plan.amount)} from ${labelFor(plan.src)} → ${labelFor(plan.dst)}`); }
-      if(topDst){ const tgt = targetsPct[topDst] ?? 0; parts.push(`direct new contributions to ${labelFor(topDst)} until ~${tgt}%`); }
-      if(parts.length===2){ nextMoveEl.textContent = `Next move: EITHER ${parts[0]} OR ${parts[1]}.`; }
-      else if(parts.length===1){ nextMoveEl.textContent = `Next move: ${parts[0]}.`; }
-      else { nextMoveEl.textContent = 'Next move: minor drift — rebalancing not urgent.'; }
-
-      // If collapsed: hide details and exit
-      if(!expanded){
-        if(summaryList){ summaryList.style.display='none'; summaryList.innerHTML=''; }
-        if(contribBlock){ contribBlock.style.display='none'; }
-        if(unclassifiedEl){ unclassifiedEl.style.display='none'; unclassifiedEl.innerHTML=''; }
-        return;
-      }
-
-      // Expanded: show details
-      if(summaryList) summaryList.style.display='grid';
-      if(unclassifiedEl) unclassifiedEl.style.display='grid';
-
-      // Action list
-      summaryList.innerHTML='';
-      if(actions.length===0){
-        const li = document.createElement('li');
-        li.textContent = 'You are within target bands. Maintain contributions and rebalance annually.';
-        summaryList.appendChild(li);
-      } else {
-        actions.forEach(t=>{ const li=document.createElement('li'); li.innerHTML = t.msg + ' <span class="tag">'+t.tag+'</span>'; summaryList.appendChild(li); });
-      }
-
-      // Contributions guidance
-      if(contrib && contrib.length){
-        contribBlock.style.display = 'block';
-        contribList.innerHTML = '';
-        const guideAmt = Math.max(1000, Math.round(a.total * 0.05)); // suggest 5% of portfolio (min 1k)
-        const show = contrib.slice(0,5);
-        show.forEach(c=>{
-          const li = document.createElement('li');
-          const pct = (c.share*100).toFixed(c.share<0.1?1:0);
-          li.textContent = `${labelFor(c.k)} — ${pct}% of next contributions`;
-          contribList.appendChild(li);
-        });
-        if(contrib.length > 5){
-          const rest = contrib.slice(5).reduce((s,c)=>s+c.share,0);
-          const li = document.createElement('li');
-          li.textContent = `Others — ${(rest*100).toFixed(0)}%`;
-          contribList.appendChild(li);
-        }
-      } else {
-        contribBlock.style.display = 'none';
-      }
-
-      // Unclassified categories with live classifier
-      const unknownItems = a.byBucket.other || [];
-      unclassifiedEl.innerHTML = '';
-      if(unknownItems.length){
-        const title = document.createElement('li');
-        title.innerHTML = '<strong>Classify new categories</strong> (choose the closest risk bucket)';
-        unclassifiedEl.appendChild(title);
-        unknownItems.forEach(it=>{
-          const li = document.createElement('li');
-          const key = it.name.toLowerCase();
-          const current = (overrides||{})[key] || 'other';
-          li.innerHTML = `
-            <div class="inline">
-              <span class="mono">${it.name}</span>
-              <select data-name="${it.name}" class="mini">
-                <option value="stocks" ${current==='stocks'?'selected':''}>Equities</option>
-                <option value="bonds" ${current==='bonds'?'selected':''}>Bonds</option>
-                <option value="cash" ${current==='cash'?'selected':''}>Cash</option>
-                <option value="real_estate" ${current==='real_estate'?'selected':''}>Real Estate</option>
-                <option value="commodities" ${current==='commodities'?'selected':''}>Commodities</option>
-                <option value="crypto" ${current==='crypto'?'selected':''}>Crypto</option>
-                <option value="other" ${current==='other'?'selected':''}>Other</option>
-              </select>
-            </div>`;
-          unclassifiedEl.appendChild(li);
-        });
-      }
-    }
-
-    function recalc(){
-      const m = getModel();
-      draw(m);
-      renderSummary(m);
-      savePortfolio(m);
-    }
-
-    // --- Events ---
-    addBtn.addEventListener('click', ()=>{ newRow('',''); recalc(); });
-    rowsEl.addEventListener('input', e => { if(e.target.matches('input')) recalc(); });
-    rowsEl.addEventListener('click', e => { if(e.target.closest('button')){ e.target.closest('tr').remove(); recalc(); }});
-    rowsEl.addEventListener('keydown', (e)=>{
-      if(e.key==='Enter' && e.target.tagName==='INPUT'){
-        const inputs=[...rowsEl.querySelectorAll('input')];
-        const isLast = inputs.indexOf(e.target) === inputs.length-1;
-        if(isLast){ newRow('', ''); setTimeout(()=>{ const inp = rowsEl.querySelector('tr:last-child input'); if(inp) inp.focus(); },0); }
-      }
-    });
-
-    // Handle classification changes & policy select & details toggle
-    unclassifiedEl.addEventListener('change', (e)=>{
-      const sel = e.target.closest('select');
-      if(!sel) return;
-      const name = sel.getAttribute('data-name');
-      if(!name) return;
-      overrides[name.toLowerCase()] = sel.value;
-      try { localStorage.setItem(LS_KEY_OVR, JSON.stringify(overrides)); } catch(_) {}
-      recalc();
-    });
-    policySelect.addEventListener('change', ()=>{ localStorage.setItem(LS_KEY_POLICY, policySelect.value); recalc(); });
-    if(detailsToggle){
-      detailsToggle.addEventListener('click', ()=>{
-        expanded = !expanded;
-        localStorage.setItem(LS_KEY_EXPANDED, expanded ? '1' : '0');
-        syncDetailsToggle();
-        renderSummary(getModel());
+        const value = document.createElement('div'); value.className='gauge-pct';
+        value.innerHTML = `<span class="mono">${pct(val)}%</span>`;
+        row.appendChild(label); row.appendChild(bar); row.appendChild(value);
+        gaugeWrap.appendChild(row);
       });
     }
 
+    // --- CSV helpers (auto delimiter + ENBD variants) ---
+    function detectDelimiter(firstLine){
+      const c = (d)=> (firstLine.match(new RegExp('\\'+d,'g'))||[]).length;
+      const candidates = [',',';','\t','|'];
+      let best = ',', bestCount=-1;
+      for(const d of candidates){ const n=c(d); if(n>bestCount){ best=d; bestCount=n; } }
+      return best;
+    }
+
+    function parseCSV(text){
+      // Normalize BOM + line breaks
+      if(text.charCodeAt(0)===0xFEFF) text = text.slice(1);
+      text = text.replace(/\r\n?/g, '\n');
+      const first = text.split('\n',1)[0] || '';
+      const delim = detectDelimiter(first);
+      const out=[]; let row=[]; let cur=''; let inQ=false;
+      for(let i=0;i<text.length;i++){
+        const ch=text[i];
+        if(inQ){
+          if(ch==='"'){
+            if(text[i+1]==='"'){ cur+='"'; i++; }
+            else { inQ=false; }
+          } else { cur+=ch; }
+        } else {
+          if(ch==='"'){ inQ=true; }
+          else if(ch===delim){ row.push(cur); cur=''; }
+          else if(ch==='\n'){ row.push(cur); out.push(row); row=[]; cur=''; }
+          else { cur+=ch; }
+        }
+      }
+      if(cur.length>0 || row.length>0){ row.push(cur); out.push(row); }
+      if(!out.length) return {header:[],rows:[]};
+      const header = (out[0]||[]).map(h=>String(h||'').trim().toLowerCase());
+      const rowsOnly = out.slice(1).filter(r=>r.some(c=>String(c||'').trim().length));
+      return {header, rows: rowsOnly};
+    }
+
+    function findCol(header, names){ const map={}; header.forEach((h,i)=>map[h]=i); for(const n of names){ if(map[n]!=null) return map[n]; } return -1; }
+
+    function parseBankCSV(text){
+      let {header, rows} = parseCSV(text);
+      if(!header.length || !rows.length){ return []; }
+      const descIdx = findCol(header, ['description','transaction description','transaction details','details','narration','merchant','transaction remarks','remarks']);
+      const amtIdx  = findCol(header, ['amount','amt','amount (aed)','amount aed','transaction amount','transaction amount (aed)']);
+      const debitIdx= findCol(header, ['debit','debit amount','withdrawal','debit (aed)','debit aed']);
+      const creditIdx=findCol(header, ['credit','credit amount','deposit','credit (aed)','credit aed']);
+      const typeIdx = findCol(header, ['type','transaction type','dr/cr','txn type','debit/credit']);
+      const signIdx = findCol(header, ['sign','direction']); // +/- sometimes provided
+
+      const out=[];
+      for(const r of rows){
+        const desc = String(r[descIdx]||'').trim();
+        let amt = 0;
+        if(amtIdx!==-1){
+          // Single amount column; figure sign from type/sign
+          let v = String(r[amtIdx]||'').replace(/[\s,]/g,'');
+          if(/^\([0-9.]+\)$/.test(v)) v = '-' + v.slice(1,-1);
+          if(/[A-Z]+/.test(v)) v = v.replace(/[A-Za-z]/g,'');
+          amt = Number(v);
+          if(typeIdx!==-1){
+            const t = String(r[typeIdx]||'').toLowerCase();
+            if(/credit|cr/.test(t) && amt<0) amt = -amt;
+            if(/debit|dr/.test(t) && amt>0) amt = -Math.abs(amt);
+          }
+          if(signIdx!==-1){ const s=String(r[signIdx]||'').trim(); if(s==='-' && amt>0) amt = -amt; }
+        } else if(debitIdx!==-1 || creditIdx!==-1){
+          const d = Number(String(r[debitIdx]||'0').replace(/[\s,]/g,''))||0;
+          const c = Number(String(r[creditIdx]||'0').replace(/[\s,]/g,''))||0;
+          amt = c - d; // expenses => negative
+        } else {
+          continue; // can't read amounts
+        }
+        if(!isFinite(amt) || amt===0) continue;
+        out.push({ desc, amount: amt });
+      }
+      return out;
+    }
+
+    // --- Categorization ---
+    const CATS = [
+      'Groceries','Fuel','Dining & Coffee','Transport','Shopping','Entertainment','Kids Education','Health & Insurance','Housing & Utilities','Travel','Fees & Charges','Traffic Fines','Transfers/Income','Other'
+    ];
+
+    function catFromRules(desc){
+      const d = desc.toLowerCase();
+      for(const r of rules){ try { const re = new RegExp(r.k,'i'); if(re.test(d)) return r.c; } catch(_) { if(d.includes(r.k.toLowerCase())) return r.c; } }
+      return null;
+    }
+
+    function catFromDesc(desc){
+      const ruleHit = catFromRules(desc); if(ruleHit) return ruleHit;
+      const d = desc.toLowerCase();
+      if(/carrefour|spinneys|lulu|waitrose|choithrams|noon\s*daily|grand mart|union coop|grocery|supermarket/.test(d)) return 'Groceries';
+      if(/adnoc|enoc|epco|emarat|fuel|petrol|gas station|service station/.test(d)) return 'Fuel';
+      if(/talabat|deliveroo|zomato|restaurant|dining|eatery|kfc|mcdonald|coffee|cafe|starbucks|paul|tim hortons/.test(d)) return 'Dining & Coffee';
+      if(/uber|careem|taxi|metro|rta|nol|parking|salik|bus|transport/i.test(d)) return 'Transport';
+      if(/amazon|noon|mall|zara|h&m|shein|ikea|decathlon|apple store|electronics|retail|pos/.test(d)) return 'Shopping';
+      if(/vox cinema|reel cinema|cinema|netflix|spotify|itunes|entertain|theme park|attraction/.test(d)) return 'Entertainment';
+      if(/school|gems|khda|tuition|nursery|university|education|kids|campus/.test(d)) return 'Kids Education';
+      if(/pharmacy|clinic|hospital|dha|seha|health|medic|daman|insur|aster|nmc|mediclinic/.test(d)) return 'Health & Insurance';
+      if(/rent|landlord|lease|du\b|etisalat\b|dewa|sewa|addc|electric|water|gas|utility|home internet|cooling|empower/.test(d)) return 'Housing & Utilities';
+      if(/emirates\s*airlines|flydubai|airarabia|airline|hotel|booking\.com|agoda|trip\.com|travel|visa fee|tourism/.test(d)) return 'Travel';
+      if(/fee|charge|interest|late|overdraft|maint|card fee|forex|markup/.test(d)) return 'Fees & Charges';
+      if(/traffic\s*fine|rta\s*fine|police\s*fine|moi\s*fine/.test(d)) return 'Traffic Fines';
+      if(/transfer|internal transfer|own account|swift|iban|salary|payroll|refund|reversal|cash deposit/.test(d)) return 'Transfers/Income';
+      return 'Other';
+    }
+
+    function analyzeSpending(txns){
+      const exp = txns.filter(t=>t.amount<0).map(t=>({desc:t.desc, amount: -t.amount, cat: catFromDesc(t.desc)}));
+      const totals={}; let sum=0; exp.forEach(t=>{ totals[t.cat]=(totals[t.cat]||0)+t.amount; sum+=t.amount; });
+      const cats = Object.entries(totals).map(([k,v])=>({cat:k, amount:v, pct: v/sum})).sort((a,b)=>b.amount-a.amount);
+      const top = cats.slice(0,8);
+      const leaks = cats.filter(c=> (c.pct>0.25 && !/Transfers\/Income|Other/.test(c.cat)) || (c.cat==='Fees & Charges' && c.pct>0.02));
+      return {sum, cats, top, leaks};
+    }
+
+    function drawSpendingPie(analysis){
+      const c = leakPie; const ctx = c.getContext('2d');
+      const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+      const W = c.clientWidth * DPR, H = c.clientHeight * DPR;
+      if(c.width!==W) c.width=W; if(c.height!==H) c.height=H;
+      ctx.clearRect(0,0,W,H); ctx.save();
+      const items = analysis.cats; const sum = analysis.sum;
+      if(sum<=0){ ctx.restore(); return; }
+      const cx=W/2, cy=H/2, radius=Math.min(W,H)*0.35, inner=radius*0.55; let start=-Math.PI/2; const labels=[];
+      items.forEach((it,i)=>{ const end=start+(it.amount/sum)*Math.PI*2; const color=hsl(i,items.length); ctx.beginPath(); ctx.arc(cx,cy,radius,start,end); ctx.arc(cx,cy,inner,end,start,true); ctx.closePath(); ctx.fillStyle=color; ctx.fill(); ctx.lineWidth=Math.max(1.5,Math.min(W,H)*0.005); ctx.strokeStyle='rgba(255,255,255,0.98)'; ctx.stroke(); const mid=(start+end)/2; const r2=radius+26; const lx=cx+Math.cos(mid)*r2; const ly=cy+Math.sin(mid)*r2; const side=(mid>Math.PI/2||mid<-Math.PI/2)?'left':'right'; const text=`${it.cat} · ${(it.pct*100).toFixed(it.pct<0.1?1:0)}%`; labels.push({x:lx,y:ly,side,text,angle:mid,color}); start=end; });
+      function relax(side){ const arr=labels.filter(l=>l.side===side).sort((a,b)=>a.y-b.y); const minGap=Math.max(14,Math.min(W,H)*0.035); for(let i=1;i<arr.length;i++){ if(arr[i].y-arr[i-1].y<minGap){ arr[i].y=arr[i-1].y+minGap; } } }
+      relax('left'); relax('right');
+      ctx.font=`${Math.max(12,Math.min(W,H)*0.028)}px ui-sans-serif`; ctx.textBaseline='middle'; ctx.fillStyle='#111827';
+      labels.forEach(l=>{ const alignRight=l.side==='left'; ctx.textAlign=alignRight?'right':'left'; const textX=l.x+(alignRight?-10:10), textY=l.y; const arcX=cx+Math.cos(l.angle)*radius, arcY=cy+Math.sin(l.angle)*radius; const midX=cx+Math.cos(l.angle)*(radius+12), midY=cy+Math.sin(l.angle)*(radius+12); const endX=textX+(alignRight?-6:6); ctx.beginPath(); ctx.moveTo(arcX,arcY); ctx.lineTo(midX,midY); ctx.lineTo(endX,textY); ctx.lineWidth=1.2; ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.stroke(); const boxX=alignRight?textX+6:textX-14; const boxY=textY-5; ctx.fillStyle=l.color; ctx.fillRect(boxX,boxY,8,8); ctx.fillStyle='#111827'; ctx.fillText(l.text,textX,textY); });
+      ctx.restore();
+    }
+
+    function renderLeakTable(analysis){
+      const rows=[]; rows.push(`<tr><th>Category</th><th style="text-align:right">Share</th></tr>`);
+      analysis.cats.forEach(c=> rows.push(`<tr><td>${c.cat}</td><td style="text-align:right">${(c.pct*100).toFixed(c.pct<0.1?1:0)}%</td></tr>`));
+      leakTable.innerHTML = rows.join('');
+    }
+
+    // Rules persistence + UI
+    function renderRules(){
+      ruleList.innerHTML = '';
+      if(!rules.length){ const p=document.createElement('div'); p.className='muted'; p.textContent='No rules yet. Add a keyword → category rule to override detection.'; ruleList.appendChild(p); return; }
+      rules.forEach((r,idx)=>{
+        const row=document.createElement('div'); row.style.display='flex'; row.style.alignItems='center'; row.style.gap='8px';
+        row.innerHTML = `<span class="badge cat">${r.k}</span><span class="muted">→</span><span class="badge cat">${r.c}</span>`;
+        const del=document.createElement('button'); del.className='icon-btn'; del.title='Remove'; del.textContent='✕'; del.addEventListener('click', ()=>{ rules.splice(idx,1); localStorage.setItem(LS_KEY_RULES, JSON.stringify(rules)); renderRules(); });
+        row.appendChild(del); ruleList.appendChild(row);
+      });
+    }
+
+    function addRule(){
+      const k = (ruleKeyword.value||'').trim(); const c = ruleCategory.value;
+      if(!k) return;
+      rules.push({k, c}); localStorage.setItem(LS_KEY_RULES, JSON.stringify(rules));
+      ruleKeyword.value=''; renderRules();
+    }
+
+    // --- Planner render ---
+    function renderPlanner(){
+      const m = getPlannerModel(); savePlanner();
+      const a = analyzePlanner(m);
+      pl_save_auto.value = Math.max(0, Math.round(a.saving));
+      efRec.textContent = moneyFmt(Math.round(a.efRecAmt));
+      const g = spendingGrade(a.shares);
+      spendBadge.className = `grade ${g.grade}`; spendBadge.textContent = `Spending — ${g.grade.toUpperCase()}`;
+      const s = a.shares; ruleBadge.className = 'badge ' + ((g.grade==='good') ? 'ok' : (g.grade==='ugly'?'err':'warn'));
+      ruleBadge.textContent = `N ${Math.round(s.needs*100)}% · W ${Math.round(s.wants*100)}% · S ${Math.round(s.saving*100)}%`;
+      if(!m.salary){
+        plannerNext.textContent = 'Enter salary to start.'; pl_leftover_note.textContent=''; pl_leftover_note.classList.remove('warn-text'); leakCard.style.display='none';
+      } else if(a.overspend){
+        plannerNext.textContent = `Overspend by ${moneyFmt(Math.round(a.deficit))}. Reduce wants/needs, OR add income.`; pl_leftover_note.textContent = `Spending exceeds take-home by ${moneyFmt(Math.round(a.deficit))}`; pl_leftover_note.classList.add('warn-text'); leakCard.style.display='block';
+      } else if(g.grade!=='good'){
+        const pct = Math.round(s.saving*100); plannerNext.textContent = `Tune spending, then invest ${pct}% to policy.`; pl_leftover_note.textContent = `Leftover after needs & wants: ${moneyFmt(Math.round(a.leftover))}`; pl_leftover_note.classList.remove('warn-text'); leakCard.style.display='block';
+      } else {
+        const pct = Math.round(s.saving*100); plannerNext.textContent = `Invest ${pct}% of income per your policy.`; pl_leftover_note.textContent = `Leftover: ${moneyFmt(Math.round(a.leftover))}`; pl_leftover_note.classList.remove('warn-text'); leakCard.style.display='none';
+      }
+      if(m.salary>0){ renderGauges(a.shares); gaugeWrap.parentElement.style.display='block'; } else { gaugeWrap.parentElement.style.display='none'; }
+      const show = plannerDetails.style.display==='block';
+      const ul = byId('plannerList'); ul.innerHTML='';
+      if(show){
+        const dN = Math.round((a.shares.needs-0.5)*100), dW = Math.round((a.shares.wants-0.3)*100), dS = Math.round((a.shares.saving-0.2)*100);
+        const li1=document.createElement('li'); li1.textContent = `Needs ${dN>=0?'+':''}${dN}%, Wants ${dW>=0?'+':''}${dW}%, Saving ${dS>=0?'+':''}${dS}% vs target.`; ul.appendChild(li1);
+        const li2=document.createElement('li'); li2.textContent = a.efGap>0 ? `Emergency fund short by ${moneyFmt(Math.round(a.efGap))}.` : 'Emergency fund ≥ 3 months — good.'; ul.appendChild(li2);
+      }
+    }
+
+    // --- Glue ---
+    function recalc(){ const m = getModel(); draw(m); renderSummary(m); savePortfolio(m); }
+
+    // Portfolio events
+    addBtn.addEventListener('click', ()=>{ newRow('', ''); recalc(); });
+    rowsEl.addEventListener('input', e => { if(e.target.matches('input')) recalc(); });
+    rowsEl.addEventListener('click', e => { if(e.target.closest('button')){ e.target.closest('tr').remove(); recalc(); }});
+    rowsEl.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && e.target.tagName==='INPUT'){ const inputs=[...rowsEl.querySelectorAll('input')]; const isLast = inputs.indexOf(e.target) === inputs.length-1; if(isLast){ newRow('', ''); setTimeout(()=>{ const inp = rowsEl.querySelector('tr:last-child input'); if(inp) inp.focus(); },0); } } });
+
+    // Summary controls
+    unclassifiedEl.addEventListener('change', (e)=>{ const sel = e.target.closest('select'); if(!sel) return; const name = sel.getAttribute('data-name'); if(!name) return; overrides[name.toLowerCase()] = sel.value; try { localStorage.setItem(LS_KEY_OVR, JSON.stringify(overrides)); } catch(_) {} recalc(); });
+    policySelect.addEventListener('change', ()=>{ localStorage.setItem(LS_KEY_POLICY, policySelect.value); policySelect2.value = policySelect.value; recalc(); });
+    detailsToggle.addEventListener('click', ()=>{ expanded = !expanded; localStorage.setItem(LS_KEY_EXPANDED, expanded ? '1' : '0'); detailsToggle.textContent = expanded ? 'Hide details' : 'Show details'; renderSummary(getModel()); });
+
+    // Planner events
+    function plannerInputHandler(){ renderPlanner(); }
+    ;[pl_salary, pl_needs, pl_wants, pl_ef_amt].forEach(el=> el.addEventListener('input', plannerInputHandler));
+    policySelect2.addEventListener('change', ()=>{ localStorage.setItem(LS_KEY_POLICY, policySelect2.value); policySelect.value = policySelect2.value; renderPlanner(); });
+    plannerDetailsToggle.addEventListener('click', ()=>{ const show = plannerDetails.style.display !== 'block'; plannerDetails.style.display = show ? 'block' : 'none'; plannerDetailsToggle.textContent = show ? 'Hide details' : 'Show details'; renderPlanner(); });
+
+    // Leak analyzer events
+    pickCsvBtn.addEventListener('click', ()=> csvInput.click());
+    csvInput.addEventListener('change', async (e)=>{
+      const file = e.target.files && e.target.files[0]; if(!file) return;
+      if(/\.xlsx?$/i.test(file.name)){ alert('XLSX detected. Please open in Excel/Sheets and export as CSV, then upload.'); return; }
+      try {
+        const text = await file.text();
+        const txns = parseBankCSV(text);
+        if(!txns.length){
+          leakResults.style.display='block';
+          leakTable.innerHTML = '<tr><td class="muted">Could not read expenses from this CSV. Please ensure it has Description and Amount (or Debit/Credit) columns. If you can, paste the first header row here and I\'ll adapt the parser.</td></tr>';
+          return;
+        }
+        const a = analyzeSpending(txns);
+        leakResults.style.display='block';
+        drawSpendingPie(a);
+        renderLeakTable(a);
+      } catch(err){
+        leakResults.style.display='block';
+        leakTable.innerHTML = `<tr><td class="muted">Error reading file: ${String(err)}</td></tr>`;
+      }
+    });
+
+    // Rules UI
+    addRuleBtn.addEventListener('click', addRule);
+
+    // Tabs
+    tabBtns.forEach(b=> b.addEventListener('click', ()=> showTab(b.dataset.tab)));
+
     // Init
+    applySaved();
     if(!loadPortfolio()) { seed(); }
+    renderPlanner();
     recalc();
 
-    // Keep canvas crisp on resize
-    let raf; window.addEventListener('resize', ()=>{ cancelAnimationFrame(raf); raf = requestAnimationFrame(recalc); });
+    // Resize
+    let raf; window.addEventListener('resize', ()=>{ cancelAnimationFrame(raf); raf = requestAnimationFrame(()=>{ draw(getModel()); }); });
 
-    // --- Basic Tests (console) ---
+    // Tests (light sanity)
     (function runTests(){
-      // parseAmount
-      console.assert(parseAmount('10,000')===10000, 'parseAmount comma failed');
-      console.assert(parseAmount('25000')===25000, 'parseAmount plain failed');
-      console.assert(parseAmount('  ')===0, 'parseAmount blanks failed');
-      console.assert(parseAmount('abc')===0, 'parseAmount non-numeric failed');
-      console.assert(parseAmount('-100')===0, 'parseAmount negative should be 0');
-
-      // targets sum to 100
-      const sumBal = Object.values(getTargets('balanced')).reduce((a,b)=>a+b,0);
-      const sumCons = Object.values(getTargets('conservative')).reduce((a,b)=>a+b,0);
-      const sumGrow = Object.values(getTargets('growth')).reduce((a,b)=>a+b,0);
-      console.assert(sumBal===100 && sumCons===100 && sumGrow===100, 'policy targets must sum to 100');
-
-      // analyze & buildActions
-      const demo = { total: 100000, items: [
-        {name:'Stocks',amount:60000},
-        {name:'Bonds',amount:15000},
-        {name:'Cash',amount:5000},
-        {name:'Real Estate',amount:15000},
-        {name:'Crypto',amount:5000}
-      ]};
-      const a = analyze(demo);
-      console.assert(a && a.total===100000, 'analyze total mismatch');
-      const b = buildActions(a,'balanced');
-      console.assert(b && Array.isArray(b.actions), 'buildActions should return actions');
-      console.assert('topDst' in b, 'buildActions should include topDst');
-
-      // draw safety on empty, and with many slices
-      try { draw({total:0, items:[]}); } catch(e){ console.error('draw(empty) threw', e); }
-      try {
-        const many = { total: 100000, items: Array.from({length:10}, (_,i)=>({name:'Cat '+(i+1), amount: 10000})) };
-        draw(many);
-      } catch(e){ console.error('draw(many) threw', e); }
-
-      // renderSummary smoke test (uses demo data)
-      try { renderSummary({ total: demo.total, items: demo.items }); } catch(e){ console.error('renderSummary threw', e); }
-
-      // gating tests
-      try {
-        draw({total:0, items:[]});
-        console.assert(pie.style.display==='none', 'pie should be hidden when empty');
-        console.assert(summaryCard.style.display==='none', 'summary should be hidden when empty');
-        const m2 = { total: 100, items: [{name:'Stocks', amount:100}]};
-        draw(m2);
-        console.assert(pie.style.display==='block', 'pie should show when data present');
-        renderSummary(m2);
-        console.assert(summaryCard.style.display==='block', 'summary should show when data present');
-      } catch(e){ console.error('gating tests error', e); }
-
-      // persistence tests (non-destructive)
-      try {
-        const prev = localStorage.getItem(LS_KEY_PORT);
-        const probe = [{name:'Test Persist', amount:12345}];
-        localStorage.setItem(LS_KEY_PORT, JSON.stringify(probe));
-        const round = JSON.parse(localStorage.getItem(LS_KEY_PORT)||'[]');
-        console.assert(Array.isArray(round) && round[0] && round[0].amount===12345, 'portfolio save/load failed');
-        // restore
-        if(prev===null) localStorage.removeItem(LS_KEY_PORT); else localStorage.setItem(LS_KEY_PORT, prev);
-      } catch(e){ console.error('persistence test failed', e); }
-
-      // IMPORTANT: restore real UI to initial hidden state after tests
-      try { recalc(); } catch(e){ console.error('restore state failed', e); }
+      console.assert(parseAmount('10,000')===10000, 'parseAmount comma');
+      console.assert(parseAmount('AED 12,345')===12345, 'parseAmount currency');
+      console.assert(parseAmount('(1,234.56)')===1234.56, 'parseAmount parentheses');
+      const csv1 = 'Description,Amount\nADNOC,-50';
+      const t1 = parseBankCSV(csv1); console.assert(t1.length===1 && t1[0].amount===-50, 'CSV simple parse');
+      const csv2 = 'Description;Debit;Credit\nSTARBUCKS;25;';
+      const t2 = parseBankCSV(csv2); console.assert(t2.length===1 && t2[0].amount===-25, 'CSV semicolon + debit/credit');
+      const ex1 = catFromDesc('ADNOC Service Station Fuel Dubai'); console.assert(ex1==='Fuel','Fuel mapping');
+      const ex2 = catFromDesc('GEMS SCHOOL TUITION'); console.assert(ex2==='Kids Education','Kids Education mapping');
+      const ex3 = catFromDesc('RTA TRAFFIC FINE'); console.assert(ex3==='Traffic Fines','Traffic Fines mapping');
+      const ex4 = catFromDesc('DEWA Water & Electricity'); console.assert(ex4==='Housing & Utilities','Utilities mapping');
+      const ex5 = catFromDesc('STARBUCKS MALL OF EMIRATES'); console.assert(ex5==='Dining & Coffee','Dining mapping');
+      try { renderSummary({total:0, items:[]}); console.assert(summaryCard.style.display==='none','summary hidden when no data'); } catch(_){}
     })();
   </script>
 </body>
