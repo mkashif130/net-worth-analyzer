@@ -4,6 +4,29 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Portfolio • Minimal</title>
+
+  <!-- Robust XLSX loader: jsDelivr → unpkg → local fallback -->
+  <script>
+    (function(){
+      function inject(src){
+        return new Promise(function(resolve){
+          var s=document.createElement('script');
+          s.src=src; s.async=true; s.onload=resolve; s.onerror=resolve;
+          document.head.appendChild(s);
+        });
+      }
+      window.__ensureXLSX = async function(){
+        if (window.XLSX) return true;
+        await inject('https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js');
+        if (window.XLSX) return true;
+        await inject('https://unpkg.com/xlsx@0.19.3/dist/xlsx.full.min.js');
+        if (window.XLSX) return true;
+        await inject('./vendor/xlsx.full.min.js');   /* Add this file to your repo for offline fallback */
+        return !!window.XLSX;
+      };
+    })();
+  </script>
+
   <style>
     :root{ --bg:#fff; --ink:#0b1220; --muted:#6b7280; --ring:#e5e7eb; --accent:#2563eb; --radius:14px; }
     *{box-sizing:border-box}
@@ -12,16 +35,10 @@
     .wrap{max-width:1040px;margin:24px auto;padding:0 12px;display:grid;gap:14px}
     header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
     h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px}
-
-    /* Minimal surfaces */
     .surface{border:1px solid var(--ring);border-radius:var(--radius);padding:12px}
-
-    /* Tabs */
     .tabs{display:flex;gap:6px;border:1px solid var(--ring);border-radius:999px;padding:3px;background:#fff;align-self:flex-start}
     .tabs button{border:none;background:transparent;padding:6px 10px;border-radius:999px;cursor:pointer;font-weight:600;font-size:12px;color:#111827}
     .tabs button.active{background:#111827;color:#fff}
-
-    /* Inputs */
     input[type=text], input[type=number]{width:100%;background:#fff;border:1px solid #d1d5db;color:var(--ink);border-radius:10px;padding:9px 10px;outline:none;transition:border-color .15s ease}
     input:focus{border-color:var(--accent)}
     table{width:100%;border-collapse:collapse}
@@ -35,15 +52,9 @@
     .icon-btn{background:transparent;border:none;color:#6b7280;cursor:pointer;padding:6px;border-radius:8px}
     .icon-btn:hover{background:#f3f4f6;color:#111827}
     .muted{color:var(--muted);font-size:12px}
-
-    /* Grid */
     .row{display:grid;grid-template-columns:1fr;gap:12px}
     @media(min-width:960px){.row{grid-template-columns:1.2fr 1fr}}
-
-    /* Chart */
     canvas{width:100%;height:420px;display:block}
-
-    /* Summary (ultra-minimal) */
     #summaryCard{width:100%}
     .pill{border:1px solid var(--ring);padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600}
     .pill.low{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
@@ -51,14 +62,10 @@
     .pill.high{background:#fef2f2;color:#991b1b;border-color:#fecaca}
     #nextMove{font-size:13px}
     .link{border:none;background:transparent;color:#2563eb;cursor:pointer;padding:0 2px;font-size:12px}
-
-    /* Inline Add + Total */
     .addbar{display:flex;align-items:center;justify-content:space-between}
     .addbar-left{display:flex;align-items:center;gap:8px}
     .totalright{display:flex;align-items:baseline;gap:6px}
     .totalright .mono{font-weight:600}
-
-    /* Planner */
     .grid2{display:grid;grid-template-columns:1fr;gap:10px}
     @media(min-width:960px){.grid2{grid-template-columns:1fr 1fr}}
     .badge{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid var(--ring)}
@@ -69,8 +76,6 @@
     .grade.good{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
     .grade.bad{background:#fffbeb;color:#92400e;border-color:#fde68a}
     .grade.ugly{background:#fef2f2;color:#991b1b;border-color:#fecaca}
-
-    /* Gauges (target vs split) */
     #gaugeWrap{display:grid;gap:10px;width:100%}
     .gauge-row{display:grid;grid-template-columns:70px 1fr 60px;gap:8px;align-items:center}
     .gauge-label{font-size:12px;color:#111827;font-weight:600}
@@ -79,13 +84,11 @@
     .gauge-band{position:relative;top:0;bottom:0;background:rgba(37,99,235,.12)}
     .gauge-over{position:absolute;top:0;bottom:0;background:rgba(220,38,38,.35)}
     .gauge-gap{position:absolute;top:0;bottom:0;background:rgba(245,158,11,.35)}
-    .gauge-pct{font-size:12px; text-align:right; font-variant-numeric:tabular-nums}
+    .gauge-pct{font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
     .needs{background:#3b82f6}
     .wants{background:#60a5fa}
     .saving{background:#10b981}
     .warn-text{color:#991b1b}
-
-    /* Leak analyzer */
     #leakCard .hint{font-size:12px;color:#6b7280}
     #leakResults{display:none;margin-top:8px}
     #leakTable{width:100%;border-collapse:collapse;margin-top:6px}
@@ -195,7 +198,6 @@
           <div class="surface" id="gaugeCard">
             <div id="gaugeWrap"></div>
             <div class="muted" id="ruleNote" style="margin-top:6px">Shaded band shows target range. Red = over the band, Amber = below (saving gap).</div>
-            <!-- keep canvas (hidden) to avoid breaking any code paths -->
             <canvas id="rulePie" width="1" height="1" style="display:none"></canvas>
           </div>
         </div>
@@ -213,7 +215,7 @@
           <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap">
             <div>
               <strong>Spending Analyzer</strong>
-              <div class="hint">Upload bank statement. Start with <strong>Emirates NBD</strong>. If your file is XLSX, export to CSV first (File → Save As → CSV). We detect Date, Description, and Amount/Debit/Credit.</div>
+              <div class="hint">Upload your bank statement (<strong>.xlsx or .csv</strong>). We detect Description and Amount/Debit/Credit automatically.</div>
             </div>
             <div style="display:flex; gap:8px; align-items:center">
               <input type="file" id="csvInput" accept=".csv,.xlsx" style="display:none"/>
@@ -313,6 +315,7 @@
 
     // Rules UI
     const ruleKeyword = byId('ruleKeyword');
+    big
     const ruleCategory = byId('ruleCategory');
     const addRuleBtn = byId('addRule');
     const ruleList = byId('ruleList');
@@ -471,7 +474,6 @@
     }
 
     function parseCSV(text){
-      // Normalize BOM + line breaks
       if(text.charCodeAt(0)===0xFEFF) text = text.slice(1);
       text = text.replace(/\r\n?/g, '\n');
       const first = text.split('\n',1)[0] || '';
@@ -508,14 +510,13 @@
       const debitIdx= findCol(header, ['debit','debit amount','withdrawal','debit (aed)','debit aed']);
       const creditIdx=findCol(header, ['credit','credit amount','deposit','credit (aed)','credit aed']);
       const typeIdx = findCol(header, ['type','transaction type','dr/cr','txn type','debit/credit']);
-      const signIdx = findCol(header, ['sign','direction']); // +/- sometimes provided
+      const signIdx = findCol(header, ['sign','direction']);
 
       const out=[];
       for(const r of rows){
         const desc = String(r[descIdx]||'').trim();
         let amt = 0;
         if(amtIdx!==-1){
-          // Single amount column; figure sign from type/sign
           let v = String(r[amtIdx]||'').replace(/[\s,]/g,'');
           if(/^\([0-9.]+\)$/.test(v)) v = '-' + v.slice(1,-1);
           if(/[A-Z]+/.test(v)) v = v.replace(/[A-Za-z]/g,'');
@@ -531,7 +532,7 @@
           const c = Number(String(r[creditIdx]||'0').replace(/[\s,]/g,''))||0;
           amt = c - d; // expenses => negative
         } else {
-          continue; // can't read amounts
+          continue;
         }
         if(!isFinite(amt) || amt===0) continue;
         out.push({ desc, amount: amt });
@@ -675,12 +676,12 @@
       const file = e.target.files && e.target.files[0]; if(!file) return;
       try {
         if(/\.xlsx?$/i.test(file.name)){
-          if (typeof XLSX === 'undefined') {
+          const ok = await (window.__ensureXLSX ? window.__ensureXLSX() : Promise.resolve(false));
+          if(!ok){
             leakResults.style.display='block';
-            leakTable.innerHTML = '<tr><td class="muted">XLSX support is unavailable in this preview (CDN blocked). Please upload a <strong>CSV</strong> instead, or run this file locally where the internet/CDN is allowed.</td></tr>';
+            leakTable.innerHTML = '<tr><td class="muted">Could not load XLSX parser. Options: 1) Upload a <strong>CSV</strong>, or 2) add <code>vendor/xlsx.full.min.js</code> to your repo for a local fallback.</td></tr>';
             return;
           }
-          // Read first sheet of XLSX and convert to CSV via SheetJS
           const buf = await file.arrayBuffer();
           const wb = XLSX.read(buf, { type: 'array' });
           const first = wb.SheetNames[0];
@@ -689,7 +690,7 @@
           const txns = parseBankCSV(csv);
           if(!txns.length){
             leakResults.style.display='block';
-            leakTable.innerHTML = '<tr><td class="muted">XLSX read OK but no expenses detected. Ensure sheet has Description and Amount (or Debit/Credit) columns, then retry.</td></tr>';
+            leakTable.innerHTML = '<tr><td class="muted">XLSX read OK but no expenses detected. Ensure the sheet has Description and Amount (or Debit/Credit) columns.</td></tr>';
             return;
           }
           const a = analyzeSpending(txns);
@@ -698,12 +699,12 @@
           renderLeakTable(a);
           return;
         }
-        // Fallback: CSV text path
+        // CSV path
         const text = await file.text();
         const txns = parseBankCSV(text);
         if(!txns.length){
           leakResults.style.display='block';
-          leakTable.innerHTML = '<tr><td class="muted">Could not read expenses from this CSV. Please ensure it has Description and Amount (or Debit/Credit) columns. If you can, paste the first header row here and I\'ll adapt the parser.</td></tr>';
+          leakTable.innerHTML = '<tr><td class="muted">Could not read expenses from this CSV. Paste your header row here and I’ll adapt the parser.</td></tr>';
           return;
         }
         const a = analyzeSpending(txns);
@@ -712,7 +713,7 @@
         renderLeakTable(a);
       } catch(err){
         leakResults.style.display='block';
-        leakTable.innerHTML = `<tr><td class=\"muted\">Error reading file: ${String(err)}</td></tr>`;
+        leakTable.innerHTML = `<tr><td class="muted">Error reading file: ${String(err)}</td></tr>`;
       }
     });
 
