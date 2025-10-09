@@ -675,6 +675,11 @@
       const file = e.target.files && e.target.files[0]; if(!file) return;
       try {
         if(/\.xlsx?$/i.test(file.name)){
+          if (typeof XLSX === 'undefined') {
+            leakResults.style.display='block';
+            leakTable.innerHTML = '<tr><td class="muted">XLSX support is unavailable in this preview (CDN blocked). Please upload a <strong>CSV</strong> instead, or run this file locally where the internet/CDN is allowed.</td></tr>';
+            return;
+          }
           // Read first sheet of XLSX and convert to CSV via SheetJS
           const buf = await file.arrayBuffer();
           const wb = XLSX.read(buf, { type: 'array' });
