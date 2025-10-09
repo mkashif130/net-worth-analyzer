@@ -673,8 +673,27 @@
     pickCsvBtn.addEventListener('click', ()=> csvInput.click());
     csvInput.addEventListener('change', async (e)=>{
       const file = e.target.files && e.target.files[0]; if(!file) return;
-      if(/\.xlsx?$/i.test(file.name)){ alert('XLSX detected. Please open in Excel/Sheets and export as CSV, then upload.'); return; }
       try {
+        if(/\.xlsx?$/i.test(file.name)){
+          // Read first sheet of XLSX and convert to CSV via SheetJS
+          const buf = await file.arrayBuffer();
+          const wb = XLSX.read(buf, { type: 'array' });
+          const first = wb.SheetNames[0];
+          const ws = wb.Sheets[first];
+          const csv = XLSX.utils.sheet_to_csv(ws);
+          const txns = parseBankCSV(csv);
+          if(!txns.length){
+            leakResults.style.display='block';
+            leakTable.innerHTML = '<tr><td class="muted">XLSX read OK but no expenses detected. Ensure sheet has Description and Amount (or Debit/Credit) columns, then retry.</td></tr>';
+            return;
+          }
+          const a = analyzeSpending(txns);
+          leakResults.style.display='block';
+          drawSpendingPie(a);
+          renderLeakTable(a);
+          return;
+        }
+        // Fallback: CSV text path
         const text = await file.text();
         const txns = parseBankCSV(text);
         if(!txns.length){
@@ -688,7 +707,7 @@
         renderLeakTable(a);
       } catch(err){
         leakResults.style.display='block';
-        leakTable.innerHTML = `<tr><td class="muted">Error reading file: ${String(err)}</td></tr>`;
+        leakTable.innerHTML = `<tr><td class=\"muted\">Error reading file: ${String(err)}</td></tr>`;
       }
     });
 
